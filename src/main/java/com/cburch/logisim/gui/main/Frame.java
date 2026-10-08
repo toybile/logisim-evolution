@@ -582,6 +582,15 @@ public class Frame extends LFrame.MainWindow implements LocaleListener {
     rightRegion.setFraction(1.0);
   }
 
+  /** Native components that can be arranged by an alternative workspace. */
+  public record WorkspaceComponents(
+      JPanel circuitView, JComponent library, JTabbedPane attributes,
+      AttrTable attributeTable, JComponent simulation) {}
+
+  public WorkspaceComponents getWorkspaceComponents() {
+    return new WorkspaceComponents(rightPanel, toolbox, bottomTab, attrTable, simExplorer);
+  }
+
   public Toolbar getToolbar() {
     return toolbar;
   }
@@ -948,7 +957,7 @@ public class Frame extends LFrame.MainWindow implements LocaleListener {
     }
   }
 
-  void viewCircuitAttributes() {
+  public void viewCircuitAttributes() {
     final var circ = project.getCurrentCircuit();
     if (circ != null) {
       setAttrTableModel(new AttrTableCircuitModel(project, circ));

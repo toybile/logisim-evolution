@@ -1,34 +1,35 @@
-"""Reproducible Java build. Requires JDK 21+; no third-party Python packages."""
+"""Build Panels with the full fork's current Gradle sources. Requires JDK 21+."""
 import argparse, os, shutil, subprocess, sys
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-parser=argparse.ArgumentParser();parser.add_argument('--jdk',type=Path);parser.add_argument('--java',type=Path);parser.add_argument('--tests',action='store_true');parser.add_argument('--check',action='append')
+parser=argparse.ArgumentParser()
+parser.add_argument('--jdk',type=Path)
+parser.add_argument('--java',type=Path,help='Optional Java executable for the Panels integration checks')
+parser.add_argument('--upstream',type=Path,help='Full fork checkout, including build.gradle.kts')
+parser.add_argument('--tests',action='store_true')
+parser.add_argument('--check',action='append')
 args=parser.parse_args()
-jdk=args.jdk or (Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else None)
-if jdk is None:
-    compiler=shutil.which('javac');jdk=Path(compiler).resolve().parent.parent if compiler else None
-if jdk is None:sys.exit('Set JAVA_HOME or pass --jdk pointing to JDK 21 or newer.')
-suffix='.exe' if os.name=='nt' else ''
-def run(tool,*params):
-    executable=args.java if tool=='java' and args.java else jdk/'bin'/(tool+suffix)
-    subprocess.run([str(executable),*map(str,params)],cwd=ROOT,check=True)
-
-build=ROOT/'build';build.mkdir(exist_ok=True)
-# Each compilation starts in a fresh directory, so stale classes cannot enter releases.
-import tempfile
-with tempfile.TemporaryDirectory(prefix='classes-',dir=build) as temp:
-    classes=Path(temp)
-    native=ROOT/'vendor/logisim-evolution-5.0.0-all.jar'
-    if not native.is_file():sys.exit('Missing vendor/logisim-evolution-5.0.0-all.jar. See README.md.')
-    run('javac','--release','21','-encoding','UTF-8','-cp',native,'-d',classes,*sorted((ROOT/'src/main/java').rglob('*.java')))
-    shutil.copytree(ROOT/'src/main/resources',classes,dirs_exist_ok=True)
-    interface=build/'interface.jar'
-    run('jar','-J-Djava.io.tmpdir='+str(build),'--create','--file',interface,'--main-class','local.logisim.panels.Launcher','-C',classes,'.')
-    if args.tests or args.check:
-        tests=classes/'test';tests.mkdir()
-        run('javac','--release','21','-encoding','UTF-8','-cp',str(interface)+os.pathsep+str(native),'-d',tests,*sorted((ROOT/'src/test/java').rglob('*.java')))
-        checks=build/'checks';checks.mkdir(exist_ok=True)
-        for name in args.check or ['Checks','AsyncChecks','UxChecks','AppearanceChecks','PinAlignmentChecks','LanguageChecks','IdleChecks']:
-            run('java','--enable-native-access=ALL-UNNAMED','-Dlogisim.panels.home='+str(checks),'-cp',os.pathsep.join(map(str,[tests,interface,native])),'local.logisim.panels.'+name,checks)
-print('Built',build/'interface.jar')
+native=args.upstream
+if native is None:
+    candidate=ROOT.parents[1] if ROOT.parent.name=='experimental' else ROOT/'build/upstream'
+    native=candidate if (candidate/'build.gradle.kts').is_file() else None
+if native is None:
+    sys.exit('Use a full checkout of toybile/logisim-evolution (logisim-panels branch), or pass --upstream pointing to it. The build no longer downloads the 5.0.0 JAR.')
+env=dict(os.environ)
+if args.jdk:env['JAVA_HOME']=str(args.jdk.resolve())
+if os.name=='nt':
+    xxd=Path(env.get('ProgramFiles','C:/Program Files'))/'Git/usr/bin'
+    if (xxd/'xxd.exe').is_file():env['PATH']=str(xxd)+os.pathsep+env.get('PATH','')
+wrapper=native/('gradlew.bat' if os.name=='nt' else 'gradlew')
+tasks=['shadowJar']
+if args.tests:tasks+=['test','verifyPanels']
+elif args.check:tasks+=['verifyPanels'+name for name in args.check]
+command=([str(wrapper)] if os.name=='nt' else ['sh',str(wrapper)])+['--no-daemon','--no-configuration-cache',*tasks]
+if args.java:command.append('-PpanelsJava='+str(args.java.resolve()))
+subprocess.run(command,cwd=native,env=env,check=True)
+artifacts=list((native/'build/libs').glob('*-all.jar'))
+if len(artifacts)!=1:sys.exit('Expected one current native application JAR.')
+(ROOT/'build').mkdir(exist_ok=True)
+shutil.copy2(artifacts[0],ROOT/'build/logisim-panels.jar')
+print('Built single native application:',ROOT/'build/logisim-panels.jar')

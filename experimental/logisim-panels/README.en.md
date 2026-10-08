@@ -1,12 +1,12 @@
 # Logisim Panels — experimental interface
 
-An independent interface experiment for Logisim Evolution 5.0.0. The workspace uses movable panels and a movable, resizable icon toolbar while retaining the original circuit editor and simulator. This is an evaluation release, not an official Logisim Evolution release or a finished upstream integration.
+An independent interface experiment for Logisim Evolution 5.1.0-dev. The workspace uses movable panels and a movable, resizable icon toolbar while retaining the original circuit editor and simulator. This is an evaluation release, not an official Logisim Evolution release or a finished upstream integration.
 
-[Português (Brasil)](README.md) · [Evaluation downloads](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.1.0) · [Upstream integration plan](docs/UPSTREAM-INTEGRATION.md)
+[Português (Brasil)](README.md) · [Evaluation downloads](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.2.0) · [Upstream integration plan](docs/UPSTREAM-INTEGRATION.md)
 
 ## Screenshots
 
-Actual screenshots of the Windows evaluation build, showing the included example circuit and the interface in English, the application default. Screenshots supplied by the project author.
+Screenshots supplied by the project author, showing the included example circuit and the interface in English, the application default. Captured with Panels 0.1.0 (Logisim 5.0.0); Panels 0.2.0 preserves this interface and updates the simulation/editor base to upstream 5.1.0-dev.
 
 ![Circuit workspace with movable Library, Properties, Simulation and Truth table panels](docs/images/workspace.png)
 
@@ -18,8 +18,8 @@ Appearance settings control language, workspace theme, selection and logic-1 col
 
 ## Try it
 
-- **Windows x64:** download and fully extract `Logisim-Panels-0.1.0-windows-x64.zip`, then open **Logisim Panels.exe**.
-- **Linux x64:** download and extract `Logisim-Panels-0.1.0-linux-x64.tar.gz`, then run `./start.sh`. Run `./example.sh` to open the included circuit; `./install-menu.sh` adds an application menu shortcut.
+- **Windows x64:** download and fully extract `Logisim-Panels-0.2.0-windows-x64.zip`, then open **Logisim Panels.exe**.
+- **Linux x64:** download and extract `Logisim-Panels-0.2.0-linux-x64.tar.gz`, then run `./start.sh`. Run `./example.sh` to open the included circuit; `./install-menu.sh` adds an application menu shortcut.
 - Both packages include Java Temurin 21, Logisim Evolution, corresponding application sources and license notices. No separate Java or Logisim installation is needed.
 - Linux requires a graphical desktop supporting X11/XWayland and the usual desktop/font libraries. Its GUI has not yet been tested on a real Linux desktop.
 - Download `SHA256SUMS.txt` to verify the archives. This release is unsigned.
@@ -37,24 +37,34 @@ Shortcuts: `Ctrl+Alt+1…4` toggles the panels; `Ctrl+Alt+0` hides them; `Esc` c
 
 ## Build from source
 
-This directory is a self-contained experimental subproject. It currently depends on the released Logisim Evolution 5.0.0 JAR, rather than on the fork's current Gradle output.
+The interface is now compiled with the fork's current native sources and dependencies through Gradle. It no longer loads a released 5.0.0 JAR or replaces a class on the classpath. The upstream source revision is recorded in [UPSTREAM.json](UPSTREAM.json).
 
-Requires JDK 21+ and Python 3.11+. Download the official `logisim-evolution-5.0.0-all.jar` into `vendor/`, then run from this directory:
+Clone `toybile/logisim-evolution`, check out `logisim-panels`, and run from the **repository root** with JDK 21+:
 
 ```sh
-python scripts/build.py --jdk /path/to/jdk --tests
+./gradlew --no-daemon --no-configuration-cache test verifyPanels shadowJar
 ```
 
-On Windows, quote a JDK path containing spaces. The tests create windows; on Linux, run them with `xvfb-run -a` for a virtual display. The interface JAR must precede the native JAR on the classpath; see `scripts/start.sh`. Portable packaging is documented in `vendor/README.md` and `scripts/package.py`.
+On Windows use `gradlew.bat`; add Git's `usr/bin` to PATH for the upstream memory tests' `xxd` utility. On Linux run the command with `xvfb-run -a` when no graphical display is available. The application is `build/libs/logisim-evolution-5.1.0dev-all.jar`; launch it with `java --enable-native-access=ALL-UNNAMED -jar ...`. Build the native editor entry point with `-Ppanels=false`.
+
+The Python helper also supports a full source checkout:
+
+```sh
+python experimental/logisim-panels/scripts/build.py --jdk /path/to/jdk --tests
+```
+
+It copies the single native application JAR to the experimental `build/` directory. Portable package generation is documented in `vendor/README.md`.
 
 ## Evidence and limitations
 
 | Verification | Result |
 |---|---|
-| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed locally on Windows; automated suites also passed on Windows and Ubuntu/Xvfb |
-| Distribution files, resources, sources, Linux permissions and SHA-256 | 28 package checks passed locally |
+| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed on the current base locally on Windows, including the bundled Java 21 |
+| Newly available TTL components: placement and .circ save/reopen | 13 checks passed locally |
+| Original upstream JUnit suite | 734 tests passed locally, no failures or skips |
+| Distribution files, resources, sources, Linux permissions and SHA-256 | See the current verification report |
 
-[Successful Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Detailed verification report](docs/VERIFICACOES.md)
+[Previous 0.1.0 Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Detailed verification report](docs/VERIFICACOES.md)
 
 These are targeted checks, not complete coverage of every Logisim feature. FPGA, HDL and all third-party libraries have not been individually audited. A real Linux desktop test is still pending; Xvfb provides a virtual display.
 
@@ -62,7 +72,7 @@ These are targeted checks, not complete coverage of every Logisim feature. FPGA,
 
 The fork keeps the upstream `main` branch unchanged. The experiment is on the `logisim-panels` branch, under `experimental/logisim-panels/`. Feedback can describe the circuit and action used, expected/actual behavior, OS, scaling and screenshot. Please omit personal information from circuit files and logs.
 
-The implementation uses an independent launcher and a visual override of `Probe.java`. Integrating it into upstream requires architectural changes, native build/localization integration and agreement with the maintainers; publishing this fork does not imply acceptance.
+The native Gradle build includes the Panels sources and a small visual change to the native `Probe.java`. Explicit workspace and grid-palette APIs replace the former reflection hooks. Upstream adoption still requires agreement with the maintainers and review of localization, accessibility and architectural conventions; publishing this fork does not imply acceptance.
 
 ## License and credits
 

@@ -1,14 +1,14 @@
 # Logisim Panels - experimental interface
 
-An independent interface experiment for **Logisim Evolution 5.0.0**. Movable and resizable panels surround the original circuit editor and simulator; the icon toolbar can form rows or columns.
+An independent interface experiment for **Logisim Evolution 5.1.0-dev**. Movable and resizable panels surround the original circuit editor and simulator; the icon toolbar can form rows or columns.
 
-- **[Download the Windows/Linux evaluation packages](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.1.0)**
+- **[Download the Windows/Linux evaluation packages](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.2.0)**
 - **[English guide](experimental/logisim-panels/README.en.md)** · **[Português (Brasil)](experimental/logisim-panels/README.md)**
 - **[Source and build instructions](experimental/logisim-panels/)** · **[Upstream integration plan](experimental/logisim-panels/docs/UPSTREAM-INTEGRATION.md)**
 
 ## Screenshots
 
-Actual screenshots of the Windows evaluation build, showing the included example circuit and the interface in English, the application default. Screenshots supplied by the project author.
+Author-supplied screenshots of Panels 0.1.0, showing the example circuit and interface in English (the default). Panels 0.2.0 preserves the interface and builds it with the current upstream 5.1.0-dev sources.
 
 ![Circuit workspace with movable Library, Properties, Simulation and Truth table panels](experimental/logisim-panels/docs/images/workspace.png)
 
@@ -22,20 +22,28 @@ Appearance settings control language, workspace theme, selection and logic-1 col
 
 | Verification | Result |
 |---|---|
-| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed locally on Windows; automated suites also passed on Windows and Ubuntu/Xvfb |
-| Distribution files, resources, sources, Linux permissions and SHA-256 | 28 package checks passed locally |
+| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed on the current native base locally on Windows, including the bundled Java 21 |
+| New upstream TTL placement and circuit save/reopen | 13 checks passed locally |
+| Original upstream JUnit suite | 734 tests passed locally, zero failures/skips |
+| Portable package verification | See the current verification report |
 
-[Successful Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Detailed verification report](experimental/logisim-panels/docs/VERIFICACOES.md)
+[Previous 0.1.0 Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Detailed verification report](experimental/logisim-panels/docs/VERIFICACOES.md)
 
 These are targeted checks, not complete coverage of every Logisim feature. FPGA, HDL and all third-party libraries have not been individually audited. A real Linux desktop test is still pending; Xvfb provides a virtual display.
 
 ## Base version and upstream updates
 
-The downloadable application and experimental build use the **official 5.0.0 release JAR**. As checked on 8 October 2026, 5.0.0 is still the latest upstream release. Upstream `main` is 139 commits ahead of that tag (including fixes, refactoring and documentation); those later changes are **not yet included in this application**. For example, `main` adds TTL 74148, 744060 and 74123 components and improvements to signal logging.
+Panels 0.2.0 compiles the interface and simulator/editor together from the fork's **current native sources** through Gradle. It uses **one application JAR** and no released 5.0.0 dependency or classpath override. Explicit workspace and grid-palette APIs replace the former reflection hooks.
 
-The fork preserves upstream source/history on `main`; the experiment is on `logisim-panels` under `experimental/logisim-panels/`. Having newer upstream source in the fork does not change the JAR used by our application. Incorporating those updates requires porting this interface to the current source and validating the integration.
+Upstream base: **5.1.0-dev**, revision [`4c02b9885faf3b523d6ff98f19b1d3c0e42d677c`](https://github.com/logisim-evolution/logisim-evolution/commit/4c02b9885faf3b523d6ff98f19b1d3c0e42d677c). This incorporates post-5.0.0 updates, including TTL 74148, 744060, 74123 and 74390 and signal-logging improvements. It is a development base, not a new official stable release. [UPSTREAM.json](experimental/logisim-panels/UPSTREAM.json) records the exact base.
 
-[Upstream release 5.0.0](https://github.com/logisim-evolution/logisim-evolution/releases/tag/v5.0.0) · [Changes since 5.0.0](https://github.com/logisim-evolution/logisim-evolution/compare/v5.0.0...main) · [Upstream changelog](https://github.com/logisim-evolution/logisim-evolution/blob/main/CHANGES.md)
+Build and verify from the repository root with JDK 21+ (use gradlew.bat on Windows; xvfb-run on Linux without a display):
+
+```sh
+./gradlew --no-daemon --no-configuration-cache test verifyPanels shadowJar
+```
+
+Run the resulting `build/libs/logisim-evolution-5.1.0dev-all.jar` with Java 21+. `-Ppanels=false` selects the native editor entry point. The `main` branch retains upstream source/history; `logisim-panels` contains the integration. [Upstream changelog](https://github.com/logisim-evolution/logisim-evolution/blob/main/CHANGES.md)
 
 This is an independent evaluation release, not an official Logisim Evolution release or an accepted upstream proposal. The original project README follows below.
 

@@ -11,6 +11,8 @@ package com.cburch.logisim.gui.generic;
 
 import com.cburch.logisim.prefs.AppPreferences;
 import java.awt.Component;
+import java.awt.Color;
+import java.util.Objects;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.MemoryImageSource;
@@ -31,6 +33,8 @@ public class GridPainter implements PropertyChangeListener {
   private double zoomFactor = 1.0;
   private Image gridImage;
   private int gridImageWidth;
+  private Integer backgroundOverride;
+  private Integer dotOverride;
 
   public GridPainter(Component destination) {
     this.destination = destination;
@@ -95,6 +99,19 @@ public class GridPainter implements PropertyChangeListener {
     }
   }
 
+  /** Sets a per-canvas palette without changing persisted simulator preferences.
+   * Pass null colors to restore the native palette. */
+  public void setPalette(Color background, Color dots) {
+    final Integer nextBackground = background == null ? null : background.getRGB();
+    final Integer nextDots = dots == null ? null : dots.getRGB();
+    if (Objects.equals(backgroundOverride, nextBackground)
+        && Objects.equals(dotOverride, nextDots)) return;
+    backgroundOverride = nextBackground;
+    dotOverride = nextDots;
+    createGridImage(gridSize, zoomFactor);
+    destination.repaint();
+  }
+
   public void paintGrid(Graphics g) {
     if (!showGrid) return;
 
@@ -117,13 +134,16 @@ public class GridPainter implements PropertyChangeListener {
     while (2 * ww < 150) ww *= 2;
     final var w = (int) Math.round(ww);
     final var pix = new int[w * w];
-    Arrays.fill(pix, AppPreferences.GRID_BG_COLOR.get());
+    final int background = backgroundOverride == null ? AppPreferences.GRID_BG_COLOR.get() : backgroundOverride;
+    final int dots = dotOverride == null ? AppPreferences.GRID_DOT_COLOR.get() : dotOverride;
+    final int zoomedDots = dotOverride == null ? AppPreferences.GRID_ZOOMED_DOT_COLOR.get() : dotOverride;
+    Arrays.fill(pix, background);
 
     if (f == 1.0) {
       final var lineStep = size * w;
       for (var j = 0; j < pix.length; j += lineStep) {
         for (var i = 0; i < w; i += size) {
-          pix[i + j] = AppPreferences.GRID_DOT_COLOR.get();
+          pix[i + j] = dots;
         }
       }
     } else {
@@ -137,8 +157,8 @@ public class GridPainter implements PropertyChangeListener {
 
       final var dotColor =
           f <= 0.5
-              ? AppPreferences.GRID_ZOOMED_DOT_COLOR.get()
-              : AppPreferences.GRID_DOT_COLOR.get();
+              ? zoomedDots
+              : dots;
       for (int j = 0; true; j += size) {
         int y = (int) Math.round(f * j);
         if (y + off0 >= w) break;
@@ -168,7 +188,7 @@ public class GridPainter implements PropertyChangeListener {
           for (int i = 0; true; i += size5) {
             int x = (int) Math.round(f * i);
             if (x >= w) break;
-            pix[y + x] = AppPreferences.GRID_DOT_COLOR.get();
+            pix[y + x] = dots;
           }
         }
       }

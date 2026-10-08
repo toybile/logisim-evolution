@@ -1,24 +1,21 @@
-# Upstream integration plan
+# Upstream integration status
 
-Status: experimental extension for Logisim Evolution 5.0.0. No upstream pull request has been opened.
+Panels 0.2.0 is now compiled with the current native Logisim Evolution sources through Gradle. Upstream base: `4c02b9885faf3b523d6ff98f19b1d3c0e42d677c`, 5.1.0-dev. No upstream pull request has been opened.
 
-## Proposed behavior
+## Completed in this fork
 
-Offer movable, resizable Library, Properties, Simulation and Truth table panels around the native circuit editor. Preserve access to existing tools and menus, support a resizable icon toolbar, indicate which panels are open, and allow users to save their layout. Appearance settings include themes, separate selection/signal colors, opacity, transitions and English/pt-BR.
+- Native source build and one application JAR; no released-JAR dependency or classpath override.
+- Explicit Frame workspace-component and GridPainter palette APIs replace reflection into native fields.
+- Native Probe retains the optional centered single-bit presentation; propagation and bus rendering remain native.
+- Windows/Ubuntu workflow runs upstream JUnit tests and the Panels real-editor suites.
+- New upstream TTL components remain available and survive circuit save/reopen.
+- English/pt-BR, movable/resizable panels and toolbar, native properties/undo, simulation, truth equations, themes, opacity and fades are preserved.
 
-## Before requesting integration
+## Before requesting upstream adoption
 
-1. Present screenshots or a short demonstration to the upstream maintainers and agree on scope. Consider whether the layout should remain optional.
-2. Port the experiment to the current upstream `main` source and Gradle build. Replace the classpath override and launcher/reflection hooks with reviewed extension points or direct source changes.
-3. Use upstream localization, preferences, icon and accessibility conventions. Review focus, keyboard navigation, small screens, display scaling and theme contrast.
-4. Preserve native simulation and editing behavior, undo/redo, library/FPGA/HDL access and saved `.circ` compatibility.
-5. Run relevant upstream and panel checks; test on actual Windows, Linux and macOS desktops where available. Document untested combinations accurately.
-6. Divide the integration into reviewable changes with before/after examples, tests and documentation. Open pull requests against upstream `main` after agreeing on the approach.
+1. Present the interface and agree on scope with the maintainers. The original editor entry point remains selectable with `-Ppanels=false` and the running UI can return to the original arrangement.
+2. Review preferences, localization, icon conventions, accessibility, keyboard focus and native API design with the project.
+3. Test on real Linux and macOS desktops, different display scaling and larger/sequential/FPGA/HDL projects.
+4. Bring new source formatting and checks into full alignment with upstream review conventions, and divide any proposal into reviewable pull requests against `main`.
 
-## Repository layout
-
-The fork preserves upstream history. Its `main` branch follows the original project; `logisim-panels` adds the current experiment at `experimental/logisim-panels/`. The added root workflow verifies the standalone experiment; it does not prove compatibility with the fork's current native build.
-
-The experimental build still uses the official 5.0.0 JAR. Releases marked `panels-*` are independent evaluation packages, with corresponding sources and license notices. They are not upstream releases.
-
-Original contribution instructions: https://github.com/logisim-evolution/logisim-evolution/blob/main/docs/developers.md#how-to-contribute
+The fork preserves upstream history on `main`; development is on `logisim-panels`. The metadata in UPSTREAM.json pins the base used by the portable downloads. Publishing the fork does not imply upstream acceptance.

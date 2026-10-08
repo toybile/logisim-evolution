@@ -165,8 +165,7 @@ final class LibraryPanel extends JPanel {
       entry.setEnabled(item.isSelectable());entry.addActionListener(e -> action.doAction());menu.add(entry);
     }}
     menu.addSeparator();JMenuItem properties=I18n.item(I18n.t("Renomear / propriedades do circuito"));
-    properties.addActionListener(e -> {try{var method=owner.frame.getClass().getDeclaredMethod("viewCircuitAttributes");method.setAccessible(true);method.invoke(owner.frame);owner.show("properties");}
-      catch(Exception failure){owner.hint(I18n.t("Abra as propriedades pelo menu Projeto."));failure.printStackTrace();}});menu.add(properties);
+    properties.addActionListener(e -> {owner.frame.viewCircuitAttributes();owner.show("properties");});menu.add(properties);
     JMenuItem complete=I18n.item(I18n.t("Lista completa de circuitos e bibliotecas"));complete.addActionListener(e -> tabs.setSelectedIndex(1));menu.add(complete);return menu;
   }
   void restoreNative(){hiddenNative.forEach(c -> c.setVisible(true));if(explorer!=null)explorer.setFilterText("");}

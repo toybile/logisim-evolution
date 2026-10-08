@@ -37,7 +37,8 @@ sonar {
 }
 
 application {
-  mainClass.set("com.cburch.logisim.Main")
+  mainClass.set(if (providers.gradleProperty("panels").orElse("true").get().toBoolean())
+      "local.logisim.panels.Launcher" else "com.cburch.logisim.Main")
   applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
@@ -177,7 +178,7 @@ extra.apply {
       // Windows packages do not allow use of any suffixes like "-dev" etc, so --app-version is set
       // in these builders separately.
       "--input", packageInputDir,
-      "--main-class", "com.cburch.logisim.Main",
+      "--main-class", application.mainClass.get(),
       "--main-jar", shadowJarFilename,
       "--java-options", "--enable-native-access=ALL-UNNAMED",
       "--copyright", copyrights,
@@ -1084,3 +1085,6 @@ tasks {
     source = fileTree("src/test/java")
   }
 }
+
+// Build the experimental UI with the current native sources and dependencies.
+apply(from = "experimental/logisim-panels/panels.gradle")

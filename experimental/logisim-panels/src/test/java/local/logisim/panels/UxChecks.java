@@ -24,7 +24,7 @@ public final class UxChecks {
   }
   public static void main(String[] args)throws Exception{
     Thread.setDefaultUncaughtExceptionHandler((thread,error) -> {error.printStackTrace();System.exit(1);});
-    I18n.language="pt-BR";FlatLightLaf.setup();LocaleManager.setLocale(Locale.forLanguageTag("pt"));Project p=Checks.demo();
+    I18n.language="pt-BR";FlatLightLaf.setup();LocaleManager.setLocale(Locale.forLanguageTag("pt"));Project p=Checks.demo();LocaleManager.setLocale(I18n.locale());
     SwingUtilities.invokeAndWait(() -> {
       try{
         Frame frame=new Frame(p);frame.setSize(1600,1000);
@@ -69,7 +69,7 @@ public final class UxChecks {
         var gate=p.getCurrentCircuit().getNonWires().stream().filter(c -> c.getFactory().getName().equals("AND Gate")).findFirst().orElseThrow();
         p.getSelection().add(gate);frame.viewComponentAttributes(p.getCurrentCircuit(),gate);ui.propertyForm.refresh();
         require(!ui.propertyForm.bindings.isEmpty(),"propriedades mostram campos ligados ao modelo nativo");
-        var label=ui.propertyForm.bindings.stream().filter(b -> b.row().getLabel().equals("Rótulo")).findFirst().orElseThrow();
+        var label=ui.propertyForm.bindings.stream().filter(b -> b.row().getLabel().equals(StdAttr.LABEL.getDisplayName())).findFirst().orElseThrow();
         ui.propertyForm.commit(label.row(),"AND1");require(gate.getAttributeSet().getValue(StdAttr.LABEL).equals("AND1"),"campo altera atributo real do componente");
         p.undoAction();require(!gate.getAttributeSet().getValue(StdAttr.LABEL).equals("AND1"),"edição pelo formulário mantém desfazer nativo");
         ui.restoreOriginal();require(frame.getContentPane()==ui.original,"editor original permanece recuperável após reorganização");frame.setVisible(false);

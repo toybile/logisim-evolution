@@ -40,6 +40,12 @@ import java.awt.event.KeyEvent;
 import java.util.Objects;
 
 public class Probe extends InstanceFactory implements DynamicElementProvider {
+  // Modified 2026-10-08: optional centered, bold presentation for one-bit pin values.
+  // The native value, propagation, hit testing and bus rendering are preserved.
+  private static boolean modernPinValues;
+  private static final java.awt.Font MODERN_DIGIT_FONT =
+      local.logisim.panels.UiFonts.font("Trebuchet MS", java.awt.Font.BOLD, 12);
+  public static void setModernPinValues(boolean enabled) { modernPinValues = enabled; }
   /**
    * Unique identifier of the tool, used as reference in project files. Do NOT change as it will
    * prevent project files from loading.
@@ -207,6 +213,34 @@ public class Probe extends InstanceFactory implements DynamicElementProvider {
       if (colored) {
         int x = bds.getX();
         int y = bds.getY();
+        if (modernPinValues && value.getWidth() == 1) {
+          Graphics2D digit = (Graphics2D) g.create();
+          digit.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+              java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+          digit.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+              java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+          // Pin paints its classic contour at bounds + 2, with extent bounds - 2.
+          // Its visible center is therefore one unit beyond the bounds center.
+          double cx = bds.getX() + bds.getWidth() / 2.0 + 1;
+          double cy = bds.getY() + bds.getHeight() / 2.0 + 1;
+          if (!IsOutput) {
+            digit.setColor(value.get(0).getColor());
+            digit.fill(new java.awt.geom.Ellipse2D.Double(cx - 7.5, cy - 7.5, 15, 15));
+            digit.setColor(Color.WHITE);
+          }
+          digit.setFont(MODERN_DIGIT_FONT);
+          String text = value.get(0).toDisplayString();
+          java.awt.font.TextLayout layout = new java.awt.font.TextLayout(text,
+              digit.getFont(), digit.getFontRenderContext());
+          java.awt.Shape outline = layout.getOutline(null);
+          java.awt.geom.Rectangle2D ink = outline.getBounds2D();
+          // Fill the centered glyph outline so font raster hinting cannot shift
+          // the digit away from the circle at fractional zoom factors.
+          digit.fill(java.awt.geom.AffineTransform.getTranslateInstance(
+              cx - ink.getCenterX(), cy - ink.getCenterY()).createTransformedShape(outline));
+          digit.dispose();
+          return;
+        }
         if (!IsOutput) {
           g.setColor(value.get(0).getColor());
           g.fillOval(x + 5, y + 4, 11, 13);

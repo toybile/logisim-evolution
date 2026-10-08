@@ -111,9 +111,9 @@ public final class Checks {
         workspace[0]=ui;
         ui.surface.setSize(1200,680);ui.arrangeSurface();
         require(SwingUtilities.isDescendingFrom(frame.getCanvas(),ui.nativeView),"área de desenho original integrada");
-        require(SwingUtilities.isDescendingFrom((JComponent)ModernWorkspace.field(frame,"toolbox"),ui),
+        require(SwingUtilities.isDescendingFrom(frame.getWorkspaceComponents().library(),ui),
             "biblioteca completa integrada");
-        require(SwingUtilities.isDescendingFrom((JComponent)ModernWorkspace.field(frame,"attrTable"),ui),
+        require(SwingUtilities.isDescendingFrom(frame.getWorkspaceComponents().attributeTable(),ui),
             "propriedades editáveis originais integradas");
         FloatingPanel panel=ui.panels.get("properties");
         ui.show("properties");panel.setBounds(442,64,330,370);ui.constrain(panel);
@@ -135,7 +135,7 @@ public final class Checks {
               "painel "+floating.id+" cabe em janela menor");
         ui.restoreOriginal();
         require(frame.getContentPane()==ui.original,"recuperação do editor original preserva a janela");
-        require(SwingUtilities.isDescendingFrom((JComponent)ModernWorkspace.field(frame,"toolbox"),frame),
+        require(SwingUtilities.isDescendingFrom(frame.getWorkspaceComponents().library(),frame),
             "biblioteca retorna ao editor original");
         LocaleManager.setLocale(Locale.ENGLISH);LocaleManager.setLocale(Locale.forLanguageTag("pt"));
         require(true,"troca de idioma preserva os controles originais");

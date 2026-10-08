@@ -1,0 +1,32 @@
+// Native-source integration: no released JAR or classpath override.
+def panelsDir = file('experimental/logisim-panels')
+sourceSets {
+    main {
+        java.srcDir(new File(panelsDir, 'src/main/java/local'))
+        resources.srcDir(new File(panelsDir, 'src/main/resources'))
+    }
+    test { java.srcDir(new File(panelsDir, 'src/test/java')) }
+}
+def suites = ['Checks', 'AsyncChecks', 'UxChecks', 'AppearanceChecks',
+              'PinAlignmentChecks', 'LanguageChecks', 'IdleChecks', 'UpstreamChecks']
+def checks = suites.collect { suite ->
+    tasks.register('verifyPanels' + suite, JavaExec) {
+        group = 'verification'
+        description = 'Runs the Panels ' + suite + ' integration suite.'
+        dependsOn(tasks.named('testClasses'))
+        classpath = sourceSets.test.runtimeClasspath.filter { it.exists() }
+        mainClass.set('local.logisim.panels.' + suite)
+        if (project.hasProperty('panelsJava')) executable = project.property('panelsJava')
+        workingDir(panelsDir)
+        def checkHome = layout.buildDirectory.dir('panels-checks/' + suite)
+        doFirst { checkHome.get().asFile.mkdirs() }
+        args(checkHome.get().asFile.absolutePath)
+        jvmArgs('--enable-native-access=ALL-UNNAMED',
+                '-Dlogisim.panels.home=' + checkHome.get().asFile.absolutePath)
+    }
+}
+tasks.register('verifyPanels') {
+    group = 'verification'
+    description = 'Runs all real-editor Panels integration suites.'
+    dependsOn(checks)
+}

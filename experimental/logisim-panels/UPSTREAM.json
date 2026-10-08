@@ -1,0 +1,8 @@
+{
+  "panels_version": "0.2.0",
+  "upstream_version": "5.1.0-dev",
+  "upstream_commit": "4c02b9885faf3b523d6ff98f19b1d3c0e42d677c",
+  "upstream_repository": "https://github.com/logisim-evolution/logisim-evolution",
+  "integration": "native-gradle-sources",
+  "date": "2026-10-08"
+}

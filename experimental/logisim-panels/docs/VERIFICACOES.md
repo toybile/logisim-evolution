@@ -1,36 +1,25 @@
-# Verificações — versão 0.1.0
+# Verification - Panels 0.2.0
 
-- 35 verificações de integração do editor original, arquivos `.circ` e simulação.
-- 8 verificações de análise assíncrona e controles que alteram os pinos reais.
-- 71 verificações dos símbolos, oito direções de redimensionamento, canto, barra e edição com desfazer.
-- 24 verificações de temas, opacidade, animações e correspondência entre equação e tabela.
-- 192 verificações do alinhamento de 0/1, em quatro orientações e quatro ampliações. Diferença máxima de rasterização: 0,5 pixel.
-- 20 verificações de idioma: padrão English, ida e volta para pt-BR, persistência, menus nativos, campos e preservação do layout.
+Base: upstream Logisim Evolution 5.1.0-dev, revision `4c02b9885faf3b523d6ff98f19b1d3c0e42d677c` (8 October 2026).
 
-Total: **350 verificações funcionais**. Não se trata de cobertura completa de todos os componentes do Logisim.
-Os testes passaram também com o Java 21 incluído no pacote Windows. A escolha de idioma
-foi verificada pelo formulário real de configurações. Outras 28 verificações validam
-os arquivos compartilháveis, recursos, fontes, permissões de execução e SHA-256.
+## Native-source build
 
-## Otimizações
+The interface and the simulator/editor are compiled together by the fork's Gradle build. The application contains one JAR, with no 5.0.0 binary dependency or classpath override. The UI uses explicit native workspace and grid-palette APIs. Grid colors are generated directly by GridPainter rather than recoloring a cached image through reflection.
 
-O mesmo ensaio de 1.000 atualizações dos sinais inalterados, no circuito de exemplo,
-registrou 7.000 pedidos de redesenho na versão anterior e zero nesta versão.
-Isso mede os redesenhos evitados neste caso; não implica redução de 100% de CPU ou memória do programa.
+## Local results
 
-Também foram reduzidas as varreduras periódicas da Biblioteca, evitadas substituições
-de texto sem mudança e suspensas as atualizações periódicas quando a janela está minimizada.
-Os painéis fechados liberam seus buffers de imagem; opacidade de 100% usa desenho direto.
-A fonte dos números é reutilizada, com alternativa incluída para sistemas sem as fontes do Windows.
-O build usa diretórios novos e separa testes dos arquivos distribuídos.
+- 734 original upstream JUnit tests passed: zero failures, errors or skips. Windows memory tests use Git's bundled xxd utility.
+- 350 existing interface checks passed on the current native base: 35 editor integration, 8 asynchronous simulation, 71 interactions/resize/undo, 24 appearance/equation, 192 alignment and 20 language checks.
+- 13 new integration checks cover TTL 74148, 744060, 74123 and 74390: availability, component creation and .circ save/reopen.
+- Idle simulation still generates zero unnecessary repaint requests in the unchanged-signal scenario.
+- The Panels suites also run against the bundled Temurin 21 runtime. The original JUnit suite was run with the local JDK 26, compiling Java-21-compatible classes.
 
-## Limitações
+## Downloads and platform limits
 
-Os testes foram executados no Windows. O pacote Linux x64 preserva permissões de execução
-e ligações do Java oficial, e inclui a mesma interface compilada para Java 21.
-Ainda falta executar a interface gráfica numa máquina Linux real.
-No fork do GitHub, a rotina `.github/workflows/logisim-panels.yml` passou em Windows
-e Ubuntu com display virtual (Xvfb), usando Java 21 e o JAR oficial da release 5.0.0.
-Resultado: https://github.com/toybile/logisim-evolution/actions/runs/37790235710
-Esta execução automatizada não substitui a conferência num desktop Linux real.
-Os pacotes não são assinados digitalmente. A versão de avaliação está publicada em [downloads](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.1.0).
+The Windows and Linux x64 packages bundle Temurin 21, the single current application JAR, exact corresponding application sources and licenses. Package verification checks resources, launcher paths, checksums and Linux execution permissions.
+
+The current GitHub workflow builds and tests the actual native fork on Windows and Ubuntu/Xvfb. Its result is recorded after execution; the earlier [successful run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) tested Panels 0.1.0 against the release JAR and does not verify this migration.
+
+A real Linux desktop test remains pending. These are targeted checks, not exhaustive validation of FPGA, HDL or all external libraries. The development base is not a new official stable Logisim release.
+
+[Previous 0.1.0 report](VERIFICACOES-0.1.0.md)

@@ -1,26 +1,15 @@
-name: Verify interface
-on: [push, pull_request, workflow_dispatch]
+name: Verify native fork
+on: [workflow_dispatch]
 jobs:
   verify:
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: toybile/logisim-evolution
+          ref: logisim-panels
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Fetch original dependency
-        shell: bash
-        run: curl -fL https://github.com/logisim-evolution/logisim-evolution/releases/download/v5.0.0/logisim-evolution-5.0.0-all.jar -o vendor/logisim-evolution-5.0.0-all.jar
-      - name: Verify on Windows
-        if: runner.os == 'Windows'
-        run: python scripts/build.py --tests
-      - name: Verify on Linux
-        if: runner.os == 'Linux'
-        run: xvfb-run -a python scripts/build.py --tests
+      - run: xvfb-run -a sh ./gradlew --no-daemon --no-configuration-cache test verifyPanels shadowJar

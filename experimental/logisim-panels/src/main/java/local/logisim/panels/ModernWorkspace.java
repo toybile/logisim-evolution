@@ -11,7 +11,6 @@ import com.cburch.draw.toolbar.Toolbar;
 import com.cburch.logisim.gui.menu.LogisimMenuBar;
 import java.awt.*;
 import java.awt.event.*;
-import java.lang.reflect.Field;
 import java.nio.file.*;
 import java.io.*;
 import java.util.*;
@@ -74,16 +73,17 @@ final class ModernWorkspace extends JPanel {
   ModernWorkspace(Frame frame,Path path) throws Exception {
     super(new BorderLayout());
     this.frame=frame; layoutFile=path; original=frame.getContentPane();
-    project=(Project)field(frame,"project");
+    project=frame.getProject();
+    var components=frame.getWorkspaceComponents();
     // Resolve the complete integration surface before detaching any native control.
-    nativeView=(JPanel)field(frame,"rightPanel");
-    JComponent toolbox=(JComponent)field(frame,"toolbox");
-    JTabbedPane attributes=(JTabbedPane)field(frame,"bottomTab");
+    nativeView=components.circuitView();
+    JComponent toolbox=components.library();
+    JTabbedPane attributes=components.attributes();
     attributesTabs=attributes;
-    nativeAttributes=(AttrTable)field(frame,"attrTable");
+    nativeAttributes=components.attributeTable();
     Toolbar nativeToolbar=frame.getToolbar();
     nativeMenu=frame.getJMenuBar();
-    JComponent simExplorer=(JComponent)field(frame,"simExplorer");
+    JComponent simExplorer=components.simulation();
     try(InputStream in=Files.newInputStream(path)){saved.load(in);}
     catch(IOException ignored){}
     saveTimer=new javax.swing.Timer(500,e -> saveLayout()); saveTimer.setRepeats(false);
@@ -142,9 +142,6 @@ final class ModernWorkspace extends JPanel {
     updateHeader();
     Appearance.workspaces.add(this);
     nativeMenu.setBackground(Appearance.mix(Color.WHITE,Appearance.canvas(),.7f));
-  }
-  static Object field(Object object,String name) throws Exception {
-    Field field=Frame.class.getDeclaredField(name);field.setAccessible(true);return field.get(object);
   }
   private void detach(JComponent component) {
     slots.add(new Slot(component));

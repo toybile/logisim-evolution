@@ -472,7 +472,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
     viewport.setErrorMessage(message, color);
   }
 
-  GridPainter getGridPainter() {
+  public GridPainter getGridPainter() {
     return painter.getGridPainter();
   }
 

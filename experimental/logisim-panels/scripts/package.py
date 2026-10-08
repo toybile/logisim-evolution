@@ -2,13 +2,13 @@
 import argparse, hashlib, json, os, shutil, subprocess, tarfile, tempfile, zipfile
 from pathlib import Path, PurePosixPath
 
-ROOT=Path(__file__).resolve().parents[1];VERSION='0.1.0'
+ROOT=Path(__file__).resolve().parents[1];VERSION='0.2.0'
 parser=argparse.ArgumentParser();parser.add_argument('--jdk',type=Path,required=True);args=parser.parse_args()
 vendor=ROOT/'vendor';build=ROOT/'build';dist=ROOT/'dist';dist.mkdir(exist_ok=True)
 def sha(path):
     with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 def metadata(platform):
-    value=json.loads((vendor/f'temurin-{platform}.json').read_text(encoding='utf-8-sig'))
+    value=json.loads((vendor/('temurin-windows.json' if platform=='windows' else 'temurin-linux.json')).read_text(encoding='utf-8-sig'))
     return value[0] if isinstance(value,list) else value
 def verify(platform,archive):
     meta=metadata(platform)
@@ -18,7 +18,7 @@ linux=vendor/'temurin-linux-x64.tar.gz';windows=vendor/'temurin-windows-x64.zip'
 linux_meta=verify('linux',linux);windows_meta=verify('windows',windows)
 source=dist/f'Logisim-Panels-{VERSION}-sources.zip'
 with zipfile.ZipFile(source,'w') as out:
-    files=[ROOT/'README.md',ROOT/'LICENSE.md',vendor/'README.md',vendor/'logisim-evolution-5.0.0-source.zip',ROOT/'.gitignore',ROOT/'.gitattributes']
+    files=[ROOT/'README.md',ROOT/'LICENSE.md',vendor/'README.md',vendor/'logisim-evolution-current-source.zip',ROOT/'.gitignore',ROOT/'.gitattributes',ROOT/'README.en.md',ROOT/'UPSTREAM.json',ROOT/'panels.gradle']
     for folder in ['src','scripts','assets','docs','.github']:files.extend(p for p in (ROOT/folder).rglob('*') if p.is_file())
     for file in sorted(set(files)):
         compression=zipfile.ZIP_STORED if file.suffix=='.zip' else zipfile.ZIP_DEFLATED
@@ -26,14 +26,13 @@ with zipfile.ZipFile(source,'w') as out:
 
 def common(folder,platform):
     (folder/'app').mkdir(parents=True,exist_ok=True)
-    shutil.copy2(build/'interface.jar',folder/'app/interface.jar')
-    shutil.copy2(vendor/'logisim-evolution-5.0.0-all.jar',folder/'app/logisim-evolution-5.0.0-all.jar')
+    shutil.copy2(build/'logisim-panels.jar',folder/'app/logisim-panels.jar')
     shutil.copytree(ROOT/'assets',folder/'examples')
     shutil.copytree(ROOT/'docs',folder/'docs')
     (folder/'licenses').mkdir();shutil.copy2(ROOT/'LICENSE.md',folder/'licenses/Logisim-GPL-3.md')
     shutil.copy2(ROOT/'src/main/resources/fonts/OFL.txt',folder/'licenses/Nunito-OFL.txt')
-    shutil.copy2(ROOT/'README.md',folder/'README.md');shutil.copy2(source,folder/'sources.zip')
-    dependencies={'logisim':{'version':'5.0.0','sha256':sha(vendor/'logisim-evolution-5.0.0-all.jar')},'java':metadata(platform),'interface':{'version':VERSION,'sha256':sha(build/'interface.jar')}}
+    shutil.copy2(ROOT/'README.md',folder/'README.md');shutil.copy2(ROOT/'README.en.md',folder/'README.en.md');shutil.copy2(source,folder/'sources.zip')
+    dependencies={'logisim':json.loads((ROOT/'UPSTREAM.json').read_text(encoding='utf-8')),'java':metadata(platform),'application':{'version':VERSION,'sha256':sha(build/'logisim-panels.jar')}}
     (folder/'DEPENDENCIES.json').write_text(json.dumps(dependencies,indent=2)+'\n',encoding='utf-8')
 
 stage=Path(tempfile.mkdtemp(prefix='package-',dir=build))
@@ -51,10 +50,10 @@ with zipfile.ZipFile(windows) as archive:
             with archive.open(item) as src,target.open('wb') as dst:shutil.copyfileobj(src,dst)
 
 inputs=stage/'inputs';inputs.mkdir()
-for name in ['interface.jar','logisim-evolution-5.0.0-all.jar']:shutil.copy2(build/name if name=='interface.jar' else vendor/name,inputs/name)
+shutil.copy2(build/'logisim-panels.jar',inputs/'logisim-panels.jar')
 output=stage/'windows'
 subprocess.run([str(args.jdk/'bin/jpackage.exe'),'--type','app-image','--name','Logisim Panels','--app-version',VERSION,
-  '--input',str(inputs),'--main-jar','interface.jar','--main-class','local.logisim.panels.Launcher',
+  '--input',str(inputs),'--main-jar','logisim-panels.jar','--main-class','local.logisim.panels.Launcher',
   '--runtime-image',str(runtime),'--dest',str(output),'--icon',str(ROOT/'assets/icon.ico'),
   '--java-options','--enable-native-access=ALL-UNNAMED'],check=True)
 winfolder=output/'Logisim Panels';common(winfolder,'windows')
