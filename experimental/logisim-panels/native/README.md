@@ -1,0 +1,1 @@
+Native integration patch against the pinned upstream source revision in UPSTREAM.json. The full GitHub fork contains these changes directly in its native sources. This copy retains the native edits alongside the local experimental project, outside generated build output.

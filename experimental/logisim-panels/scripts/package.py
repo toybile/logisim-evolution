@@ -19,7 +19,7 @@ linux_meta=verify('linux',linux);windows_meta=verify('windows',windows)
 source=dist/f'Logisim-Panels-{VERSION}-sources.zip'
 with zipfile.ZipFile(source,'w') as out:
     files=[ROOT/'README.md',ROOT/'LICENSE.md',vendor/'README.md',vendor/'logisim-evolution-current-source.zip',ROOT/'.gitignore',ROOT/'.gitattributes',ROOT/'README.en.md',ROOT/'UPSTREAM.json',ROOT/'panels.gradle']
-    for folder in ['src','scripts','assets','docs','.github']:files.extend(p for p in (ROOT/folder).rglob('*') if p.is_file())
+    for folder in ['src','scripts','assets','docs','.github','native']:files.extend(p for p in (ROOT/folder).rglob('*') if p.is_file())
     for file in sorted(set(files)):
         compression=zipfile.ZIP_STORED if file.suffix=='.zip' else zipfile.ZIP_DEFLATED
         out.write(file,'logisim-panels-source/'+file.relative_to(ROOT).as_posix(),compress_type=compression)

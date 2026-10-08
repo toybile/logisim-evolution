@@ -18,6 +18,7 @@ final class FloatingPanel extends JPanel {
   private boolean open=true;
   private float visibilityAlpha=1f;
   private javax.swing.Timer transition;
+  java.util.function.LongSupplier transitionClock=System::nanoTime;
   private java.awt.image.BufferedImage paintBuffer;
 
   FloatingPanel(ModernWorkspace owner, String id, String title, JComponent content,
@@ -93,9 +94,9 @@ final class FloatingPanel extends JPanel {
     if(transition!=null)transition.stop();
     if(visible&&!super.isVisible()){visibilityAlpha=0f;super.setVisible(true);}
     final float start=visibilityAlpha,target=visible?1f:0f;
-    final long begun=System.nanoTime();
+    final long begun=transitionClock.getAsLong();
     transition=new javax.swing.Timer(16,e -> {
-      float progress=Math.min(1f,(System.nanoTime()-begun)/160_000_000f);
+      float progress=Math.min(1f,(transitionClock.getAsLong()-begun)/160_000_000f);
       float eased=progress*progress*(3-2*progress);
       visibilityAlpha=start+(target-start)*eased;repaint();
       if(progress>=1f){((javax.swing.Timer)e.getSource()).stop();transition=null;

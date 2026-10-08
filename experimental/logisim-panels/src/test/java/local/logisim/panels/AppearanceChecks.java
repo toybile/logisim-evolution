@@ -63,6 +63,10 @@ public final class AppearanceChecks {
         FloatingPanel panel=ui.panels.get("properties");panel.setBounds(700,20,380,560);panel.setVisible(true);
         int settled=alpha(panel);require(settled>=238&&settled<=242,"painel produz composição translúcida de 94 por cento");
         Timer begin=new Timer(450,beginEvent->{
+        // Deterministic elapsed time avoids losing all fade frames when a CI
+        // worker stalls the event queue. Actual timer callbacks and painting run.
+        var transitionTime=new java.util.concurrent.atomic.AtomicLong(System.nanoTime());
+        panel.transitionClock=() -> transitionTime.getAndAdd(20_000_000L);
         ui.hide("properties");
         require(!panel.isOpen()&&panel.isVisible()&&!ui.toggles.get("properties").isSelected(),"fechamento anima sem deixar símbolo selecionado");
         boolean[] observed={false};
@@ -70,6 +74,7 @@ public final class AppearanceChecks {
           if(observed[0])return;
           try{
             int fading=alpha(panel);if(fading>=settled)return;observed[0]=true;require(fading>0&&fading<settled,"fade-out tem quadros intermediários");
+            panel.transitionClock=System::nanoTime;
             ui.show("properties");
             Timer end=new Timer(260,event->{
               try{
