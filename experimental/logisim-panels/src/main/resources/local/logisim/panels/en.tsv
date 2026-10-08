@@ -1,0 +1,168 @@
+Biblioteca	Library
+Propriedades	Properties
+Simulação	Simulation
+Tabela verdade	Truth table
+Sinais	Signals
+Estados internos	Internal states
+Configurações	Settings
+Idioma	Language
+Temas e aparência	Settings and appearance
+Temas e aparência…	Settings and appearance…
+Tema da área de trabalho	Workspace theme
+Cor da seleção	Selection color
+Cor do sinal 1	Signal 1 color
+Opacidade dos painéis (%)	Panel opacity (%)
+Opacidade dos painéis	Panel opacity
+85% é mais translúcido; 100% é opaco.	85% is more translucent; 100% is opaque.
+Transições suaves ao abrir e fechar	Smooth transitions when opening and closing
+Animações	Animations
+Aparência salva.	Settings saved.
+Azul claro	Light blue
+Verde claro	Light green
+Areia	Sand
+Violeta clara	Light violet
+Cinza claro	Light gray
+Azul	Blue
+Verde	Green
+Violeta	Violet
+Laranja	Orange
+Rosa	Pink
+Turquesa	Turquoise
+Grafite	Graphite
+Selecionar e mover componentes	Select and move components
+Interagir com o circuito	Interact with the circuit
+Conectar fios	Connect wires
+Inserir texto	Insert text
+Todas as ferramentas e atalhos configurados	All tools and configured shortcuts
+Abrir / fechar 	Open / close 
+Executar simulação	Run simulation
+Pausar simulação	Pause simulation
+Propagar uma etapa	Propagate one step
+Reiniciar simulação	Reset simulation
+Disposição dos painéis e da barra	Panel and toolbar layout
+Como usar a área de trabalho	Workspace help
+Arraste para mover a barra; redimensione pelas bordas ou pelo canto.	Drag to move the toolbar; resize using any edge or corner.
+Arraste o título para mover. Clique duas vezes para minimizar.	Drag the title to move. Double-click to minimize.
+Minimizar / expandir	Minimize / expand
+Fechar painel (reabra pelo símbolo na barra)	Close panel (reopen using its toolbar symbol)
+Arraste para redimensionar	Drag to resize
+Arraste os títulos dos painéis para organizar sua área de trabalho.	Drag panel titles to arrange your workspace.
+Selecione um componente na grade para editar.	Select a component on the grid to edit.
+Selecione um componente na grade para editar suas propriedades.	Select a component on the grid to edit its properties.
+Entrada alterada.	Input changed.
+Salvar disposição agora	Save layout now
+Disposição salva.	Layout saved.
+Restaurar disposição inicial	Restore default layout
+Disposição inicial restaurada.	Default layout restored.
+Barra horizontal	Horizontal toolbar
+Barra vertical	Vertical toolbar
+Ocultar todos os painéis · Ctrl+Alt+0	Hide all panels · Ctrl+Alt+0
+Mostrar todos os painéis	Show all panels
+Voltar ao editor original	Return to the original editor
+Como usar	How to use
+Voltar ao zoom 100%	Reset zoom to 100%
+Diminuir zoom	Zoom out
+Aumentar zoom	Zoom in
+Enquadrar	Fit
+Ajustar o circuito ao espaço disponível	Fit the circuit to the available space
+Grade	Grid
+Não foi possível salvar a disposição.	Could not save the layout.
+Posição  X: 	Position  X: 
+Circuito	Circuit
+ • alterado	 • modified
+Simulação ativa	Simulation running
+Simulação pausada	Simulation paused
+Oscilação detectada	Oscillation detected
+Erro na simulação	Simulation error
+Acesso rápido	Quick access
+Buscar componente…	Search components…
+Pesquisar componentes em todas as bibliotecas carregadas	Search components in all loaded libraries
+Buscar componente	Search components
+Recolher ou expandir o Acesso rápido	Collapse or expand Quick access
+Recolher Acesso rápido	Collapse Quick access
+Recolher	Collapse
+Expandir	Expand
+ Acesso rápido	 Quick access
+Componentes	Components
+Interface antiga de circuitos e bibliotecas do Logisim	Original Logisim circuit and library interface
+Circuito ativo	Active circuit
+Gerenciar	Manage
+Comandos completos de circuitos e VHDL	All circuit and VHDL commands
+Entrada	Input
+Saída	Output
+Selecionar 	Select 
+ e inserir na grade	 and place on the grid
+Circuitos do projeto	Project circuits
+Nenhum componente encontrado.	No components found.
+Portas lógicas	Logic gates
+Entrada/Saída	Input/Output
+Clique na grade para inserir 	Click on the grid to place 
+Adicionar circuito	Add circuit
+Adicionar VHDL	Add VHDL
+Mover para cima	Move up
+Mover para baixo	Move down
+Editar aparência	Edit appearance
+Remover	Remove
+Renomear / propriedades do circuito	Rename / circuit properties
+Abra as propriedades pelo menu Projeto.	Open properties from the Project menu.
+Lista completa de circuitos e bibliotecas	Full circuit and library list
+›  Todas as propriedades	›  All properties
+Todas as propriedades	All properties
+Mostrar a tabela completa de atributos e seus editores	Show all attributes and their editors
+Rótulo	Label
+Posição X	Position X
+Posição Y	Position Y
+Orientação	Orientation
+Texto	Text
+Editar 	Edit 
+ no editor completo	 in the full editor
+Arraste o componente na grade para alterar sua posição.	Drag the component on the grid to change its position.
+Não foi possível editar 	Could not edit 
+Propriedade	Property
+Relógio automático	Automatic clock
+Executar	Run
+Ativar propagação	Enable propagation
+Passo	Step
+Reiniciar	Reset
+Reiniciar valores	Reset values
+<html>Adicione pinos de entrada e saída<br>para controlar os sinais aqui.</html>	<html>Add input and output pins<br>to control signals here.</html>
+Ativa	Running
+Pausada	Paused
+Altere as entradas para testar.	Change the inputs to test the circuit.
+Use Passo ou Executar para propagar.	Use Step or Run to propagate.
+Alternar o valor de 	Toggle the value of 
+Valor binário de 	Binary value of 
+; pressione Enter para aplicar	; press Enter to apply
+Use de 1 a 	Use 1 to 
+ dígitos binários (0 e 1).	 binary digits (0 and 1).
+Valor atual da saída 	Current output value of 
+Selecione um circuito.	Select a circuit.
+Adicione ao menos um pino de saída ao circuito.	Add at least one output pin to the circuit.
+Este painel aceita até 10 bits de entrada (1.024 combinações). Use Projeto → Analisar circuito para ampliar a análise.	This panel supports up to 10 input bits (1,024 combinations). Use Project → Analyze Circuit for further analysis.
+Há mais bits de saída do que o analisador suporta.	There are more output bits than the analyzer supports.
+Este circuito depende de memória, relógio ou código externo. Use a Simulação para acompanhar seus estados.	This circuit depends on memory, a clock, or external code. Use Simulation to inspect its states.
+Calcule a tabela do circuito atual.	Calculate the current circuit's truth table.
+Calcular	Calculate
+Calcular todas as combinações do circuito atual	Calculate all combinations of the current circuit
+Exportar CSV	Export CSV
+Salvar os valores da tabela em CSV	Save truth table values as CSV
+Equação proposicional do circuito	Circuit propositional equation
+Tabela para circuitos combinacionais, até 10 bits de entrada.	Truth table for combinational circuits, up to 10 input bits.
+Circuito alterado. Clique em Calcular para atualizar.	Circuit changed. Click Calculate to update.
+Calculando…	Calculating…
+ combinações • 	 combinations • 
+ • tabela atualizada	 • table updated
+Substituir o arquivo existente?	Replace the existing file?
+CSV salvo: 	CSV saved: 
+Não foi possível atualizar o tema	Could not update the theme
+A nova interface não pôde ser carregada. O editor original continua disponível.\n	The new interface could not be loaded. The original editor is still available.\n
+Abra ou feche os painéis pelos símbolos da barra. A cor de seleção indica painel aberto.\n	Open or close panels using toolbar symbols. The selection color indicates an open panel.\n
+Arraste o cabeçalho para mover um painel. Redimensione por qualquer borda ou canto.\n	Drag a panel header to move it. Resize using any edge or corner.\n
+O canto inferior direito ajusta altura e largura ao mesmo tempo.\n	The bottom-right corner adjusts height and width together.\n
+Arraste os pontos da barra para movê-la e redimensione para reorganizar os símbolos.\n	Drag the toolbar grip to move it; resize it to rearrange the symbols.\n
+Posição, tamanho e visibilidade ficam salvos.\n\n	Position, size, and visibility are saved.\n\n
+Ctrl+Alt+1…4: abrir ou fechar cada painel; Ctrl+Alt+0: ocultar todos.\n	Ctrl+Alt+1…4: toggle individual panels; Ctrl+Alt+0: hide all panels.\n
+Esc: fechar o painel com foco.\n\n	Esc: close the focused panel.\n\n
+Todas as ferramentas originais estão no símbolo Ferramentas.\n	All original tools are available through the Tools symbol.\n
+A Biblioteca reúne todas as bibliotecas carregadas; Legacy mantém a lista nativa.\n	Library includes all loaded libraries; Legacy keeps the native list.\n
+A tabela integrada atende circuitos combinacionais.	The integrated truth table supports combinational circuits.

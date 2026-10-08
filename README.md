@@ -1,3 +1,17 @@
+# Logisim Panels — experimental UI proposal
+
+This fork hosts an independent interface experiment for **Logisim Evolution 5.0.0**: movable and resizable panels, a movable icon toolbar, themes, opacity, transitions, and English/pt-BR settings.
+
+- **[Download the Windows/Linux evaluation packages](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.1.0)**
+- **[Read the English guide](experimental/logisim-panels/README.en.md)** · **[Português (Brasil)](experimental/logisim-panels/README.md)**
+- **[Source and build instructions](experimental/logisim-panels/)** · **[Integration plan](experimental/logisim-panels/docs/UPSTREAM-INTEGRATION.md)**
+
+Status: experimental extension; Windows has targeted local verification, while a real Linux desktop test is pending. The implementation still uses the released 5.0.0 JAR and is not integrated into upstream's current Gradle build. This is not an official release or an accepted upstream proposal.
+
+The experiment is on **`logisim-panels`**. **`main`** retains the upstream source and history. The original README follows below.
+
+---
+
 [![Logisim-evolution](docs/img/logisim-evolution-logo.png)](https://github.com/logisim-evolution/logisim-evolution)
 
 ---

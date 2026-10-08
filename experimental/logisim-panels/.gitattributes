@@ -1,0 +1,14 @@
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.java text eol=lf
+*.tsv text eol=lf
+*.properties text eol=lf
+*.jar binary
+*.zip binary
+*.png binary
+*.ico binary
+*.ttf binary
+# Message fragments keep spaces used in dynamic labels; the font license stays verbatim.
+src/main/resources/local/logisim/panels/en.tsv whitespace=-blank-at-eol
+src/main/resources/fonts/OFL.txt -whitespace
