@@ -10,11 +10,11 @@ An independent interface experiment for **Logisim Evolution 5.0.0**. Movable and
 
 Actual screenshots of the Windows evaluation build, showing the included example circuit. These captures use Portuguese (Brazil); English is the application default.
 
-![Circuit workspace with movable Library, Properties, Simulation and Truth table panels](experimental/logisim-panels/docs/images/workspace.png)
+![Circuit workspace with movable Library, Properties, Simulation and Truth table panels](experimental/logisim-panels/docs/images/workspace.jpg)
 
 The icon toolbar reflects the open panels. Simulation controls operate the circuit inputs, and the truth table includes its propositional equation. Panels and the toolbar can be moved and resized.
 
-![Appearance settings: language, workspace theme, selection color, logic-1 color, panel opacity and transitions](experimental/logisim-panels/docs/images/settings.png)
+![Appearance settings: language, workspace theme, selection color, logic-1 color, panel opacity and transitions](experimental/logisim-panels/docs/images/settings.jpg)
 
 Appearance settings control language, workspace theme, selection and logic-1 colors, opacity and transitions independently.
 

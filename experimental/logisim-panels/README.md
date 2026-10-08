@@ -7,11 +7,11 @@ os circuitos `.circ`, a simulação e os comandos originais. Versão de avaliaç
 
 Capturas reais da versão Windows, com o circuito de exemplo incluído. As imagens usam Português (Brasil); English continua sendo o idioma padrão.
 
-![Área de circuito com Biblioteca, Propriedades, Simulação e Tabela verdade abertas](docs/images/workspace.png)
+![Área de circuito com Biblioteca, Propriedades, Simulação e Tabela verdade abertas](docs/images/workspace.jpg)
 
 A barra indica os painéis abertos. A Simulação controla as entradas reais do circuito e a Tabela verdade exibe a equação proposicional. Painéis e barra podem ser movidos e redimensionados.
 
-![Configurações de idioma, tema, seleção, sinal 1, opacidade e animações](docs/images/settings.png)
+![Configurações de idioma, tema, seleção, sinal 1, opacidade e animações](docs/images/settings.jpg)
 
 ## Usar sem instalar Java
 
