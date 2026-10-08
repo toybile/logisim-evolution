@@ -29,6 +29,8 @@ O build usa diretórios novos e separa testes dos arquivos distribuídos.
 Os testes foram executados no Windows. O pacote Linux x64 preserva permissões de execução
 e ligações do Java oficial, e inclui a mesma interface compilada para Java 21.
 Ainda falta executar a interface gráfica numa máquina Linux real.
-A rotina em `.github/workflows/verify.yml` permite verificar a versão em Windows e Linux
-quando o projeto for colocado no GitHub; ela não foi executada remotamente aqui.
+No fork do GitHub, a rotina `.github/workflows/logisim-panels.yml` passou em Windows
+e Ubuntu com display virtual (Xvfb), usando Java 21 e o JAR oficial da release 5.0.0.
+Resultado: https://github.com/toybile/logisim-evolution/actions/runs/37790235710
+Esta execução automatizada não substitui a conferência num desktop Linux real.
 Os pacotes não são assinados digitalmente e não foram publicados numa página pública de downloads.
