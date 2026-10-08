@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           curl --retry 3 -fL https://github.com/logisim-evolution/logisim-evolution/releases/download/v5.0.0/logisim-evolution-5.0.0-all.jar -o vendor/logisim-evolution-5.0.0-all.jar
-          echo '52e1884e9b456ccb368955359cd5d8d68a0646ba4fd2d199a748e174cfa07b77  vendor/logisim-evolution-5.0.0-all.jar' | sha256sum --check
+          echo '6b368e894742c04cc83aa9830f869bcab0190ede4df43ad6fecdb89b3a23a41c  vendor/logisim-evolution-5.0.0-all.jar' | sha256sum --check
       - name: Verify on Windows
         if: runner.os == 'Windows'
         run: python scripts/build.py --tests
