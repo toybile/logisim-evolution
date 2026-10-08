@@ -75,9 +75,9 @@ O auxiliar Python aceita `--jdk`, `--upstream` e `--tests`; ele usa o mesmo buil
 - **350 verificações funcionais** passaram localmente no Windows: integração do editor, simulação, redimensionamento, layout, temas, alinhamento dos pinos e idioma.
 - **13 verificações adicionais** confirmam os novos TTL ao criar, salvar e reabrir circuitos.
 - **734 testes originais** passaram localmente, sem falhas ou testes omitidos.
-- Os pacotes atualizados são verificados separadamente; veja o relatório abaixo.
+- **27 verificações dos pacotes** passaram localmente.
 
-[Execução anterior da versão 0.1.0 no GitHub](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Relatório detalhado](docs/VERIFICACOES.md)
+[Execução atual aprovada em Windows e Ubuntu/Xvfb](https://github.com/toybile/logisim-evolution/actions/runs/37800677009) · [Relatório detalhado](docs/VERIFICACOES.md)
 
 São testes direcionados; não cobrem todos os recursos do Logisim. Ainda falta a conferência em um desktop Linux real.
 

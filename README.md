@@ -22,12 +22,12 @@ Appearance settings control language, workspace theme, selection and logic-1 col
 
 | Verification | Result |
 |---|---|
-| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed on the current native base locally on Windows, including the bundled Java 21 |
+| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed on the current native base locally on Windows, including the bundled Java 21; current native suites also passed on Windows and Ubuntu/Xvfb |
 | New upstream TTL placement and circuit save/reopen | 13 checks passed locally |
 | Original upstream JUnit suite | 734 tests passed locally, zero failures/skips |
-| Portable package verification | See the current verification report |
+| Portable package verification | 27 checks passed locally |
 
-[Previous 0.1.0 Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Detailed verification report](experimental/logisim-panels/docs/VERIFICACOES.md)
+[Successful current-source Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37800677009) · [Detailed verification report](experimental/logisim-panels/docs/VERIFICACOES.md)
 
 These are targeted checks, not complete coverage of every Logisim feature. FPGA, HDL and all third-party libraries have not been individually audited. A real Linux desktop test is still pending; Xvfb provides a virtual display.
 

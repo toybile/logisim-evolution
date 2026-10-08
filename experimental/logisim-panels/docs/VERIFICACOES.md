@@ -16,9 +16,9 @@ The interface and the simulator/editor are compiled together by the fork's Gradl
 
 ## Downloads and platform limits
 
-The Windows and Linux x64 packages bundle Temurin 21, the single current application JAR, exact corresponding application sources and licenses. Package verification checks resources, launcher paths, checksums and Linux execution permissions.
+The Windows and Linux x64 packages bundle Temurin 21, the single current application JAR, exact corresponding application sources and licenses. 27 package checks passed: resources, launcher paths, checksums and Linux execution permissions.
 
-The current GitHub workflow builds and tests the actual native fork on Windows and Ubuntu/Xvfb. Its result is recorded after execution; the earlier [successful run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) tested Panels 0.1.0 against the release JAR and does not verify this migration.
+The current GitHub workflow passed on **Windows and Ubuntu/Xvfb with Java 21**, building the actual native fork and running the original upstream JUnit tests plus all Panels suites. [Successful native-source run](https://github.com/toybile/logisim-evolution/actions/runs/37800677009). This validates the migration; the original 0.1.0 report is retained separately.
 
 A real Linux desktop test remains pending. These are targeted checks, not exhaustive validation of FPGA, HDL or all external libraries. The development base is not a new official stable Logisim release.
 

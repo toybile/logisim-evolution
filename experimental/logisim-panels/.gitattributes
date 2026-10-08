@@ -12,3 +12,6 @@
 # Message fragments keep spaces used in dynamic labels; the font license stays verbatim.
 src/main/resources/local/logisim/panels/en.tsv whitespace=-blank-at-eol
 src/main/resources/fonts/OFL.txt -whitespace
+
+# Patch context intentionally contains spaces.
+*.patch -whitespace
