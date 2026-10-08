@@ -16,6 +16,18 @@ public final class AppearanceChecks {
     BufferedImage image=new BufferedImage(panel.getWidth(),panel.getHeight(),BufferedImage.TYPE_INT_ARGB);
     Graphics2D g=image.createGraphics();panel.paint(g);g.dispose();return image.getRGB(20,100)>>>24;
   }
+  // Observe each real tick after its alpha changes; a fixed-delay sample can
+  // miss intermediate frames when painting delays the Swing event thread.
+  static void observeTransition(FloatingPanel panel,java.awt.event.ActionListener observer){
+    try{
+      var field=FloatingPanel.class.getDeclaredField("transition");field.setAccessible(true);
+      Timer timer=(Timer)field.get(panel);
+      var listeners=timer.getActionListeners();
+      for(var listener:listeners)timer.removeActionListener(listener);
+      timer.addActionListener(observer);
+      for(var listener:listeners)timer.addActionListener(listener);
+    }catch(ReflectiveOperationException error){throw new RuntimeException(error);}
+  }
   public static void main(String[] args)throws Exception{
     Thread.setDefaultUncaughtExceptionHandler((thread,error)->{error.printStackTrace();System.exit(1);});
     FlatLightLaf.setup();Appearance.load(Paths.get(args[0],"check-appearance.properties"));
@@ -53,9 +65,11 @@ public final class AppearanceChecks {
         Timer begin=new Timer(450,beginEvent->{
         ui.hide("properties");
         require(!panel.isOpen()&&panel.isVisible()&&!ui.toggles.get("properties").isSelected(),"fechamento anima sem deixar símbolo selecionado");
-        Timer middle=new Timer(55,e->{
+        boolean[] observed={false};
+        observeTransition(panel,e->{
+          if(observed[0])return;
           try{
-            int fading=alpha(panel);require(fading>0&&fading<settled,"fade-out tem quadros intermediários");
+            int fading=alpha(panel);if(fading>=settled)return;observed[0]=true;require(fading>0&&fading<settled,"fade-out tem quadros intermediários");
             ui.show("properties");
             Timer end=new Timer(260,event->{
               try{
@@ -74,7 +88,7 @@ public final class AppearanceChecks {
               }catch(Throwable failure){failure.printStackTrace();System.exit(1);}
             });end.setRepeats(false);end.start();
           }catch(Throwable failure){failure.printStackTrace();System.exit(1);}
-        });middle.setRepeats(false);middle.start();
+        });
         });begin.setRepeats(false);begin.start();
       }catch(Exception failure){throw new RuntimeException(failure);}
     });
