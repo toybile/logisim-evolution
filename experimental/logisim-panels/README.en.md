@@ -4,6 +4,18 @@ An independent interface experiment for Logisim Evolution 5.0.0. The workspace u
 
 [Português (Brasil)](README.md) · [Evaluation downloads](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.1.0) · [Upstream integration plan](docs/UPSTREAM-INTEGRATION.md)
 
+## Screenshots
+
+Actual screenshots of the Windows evaluation build, showing the included example circuit. These captures use Portuguese (Brazil); English is the application default.
+
+![Circuit workspace with movable Library, Properties, Simulation and Truth table panels](docs/images/workspace.png)
+
+The icon toolbar reflects the open panels. Simulation controls operate the circuit inputs, and the truth table includes its propositional equation. Panels and the toolbar can be moved and resized.
+
+![Appearance settings: language, workspace theme, selection color, logic-1 color, panel opacity and transitions](docs/images/settings.png)
+
+Appearance settings control language, workspace theme, selection and logic-1 colors, opacity and transitions independently.
+
 ## Try it
 
 - **Windows x64:** download and fully extract `Logisim-Panels-0.1.0-windows-x64.zip`, then open **Logisim Panels.exe**.
@@ -37,7 +49,14 @@ On Windows, quote a JDK path containing spaces. The tests create windows; on Lin
 
 ## Evidence and limitations
 
-The existing Windows test report records 350 functional checks and 28 package checks. These are targeted checks, not complete coverage of every Logisim feature. FPGA, HDL and all third-party libraries have not been individually audited. Linux packaging has been inspected, but a real Linux desktop test is still pending. See [the verification report](docs/VERIFICACOES.md).
+| Verification | Result |
+|---|---|
+| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed locally on Windows; automated suites also passed on Windows and Ubuntu/Xvfb |
+| Distribution files, resources, sources, Linux permissions and SHA-256 | 28 package checks passed locally |
+
+[Successful Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Detailed verification report](docs/VERIFICACOES.md)
+
+These are targeted checks, not complete coverage of every Logisim feature. FPGA, HDL and all third-party libraries have not been individually audited. A real Linux desktop test is still pending; Xvfb provides a virtual display.
 
 ## Contributing to this experiment
 

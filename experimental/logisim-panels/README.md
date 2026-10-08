@@ -3,6 +3,16 @@
 Interface com painéis móveis para o Logisim Evolution 5.0.0. Preserva o editor,
 os circuitos `.circ`, a simulação e os comandos originais. Versão de avaliação 0.1.0.
 
+## Imagens do programa
+
+Capturas reais da versão Windows, com o circuito de exemplo incluído. As imagens usam Português (Brasil); English continua sendo o idioma padrão.
+
+![Área de circuito com Biblioteca, Propriedades, Simulação e Tabela verdade abertas](docs/images/workspace.png)
+
+A barra indica os painéis abertos. A Simulação controla as entradas reais do circuito e a Tabela verdade exibe a equação proposicional. Painéis e barra podem ser movidos e redimensionados.
+
+![Configurações de idioma, tema, seleção, sinal 1, opacidade e animações](docs/images/settings.png)
+
 ## Usar sem instalar Java
 
 - **Windows x64:** extraia `Logisim-Panels-0.1.0-windows-x64.zip` e abra `Logisim Panels.exe`.
@@ -61,6 +71,16 @@ No Windows, a mesma instrução aceita um caminho como `"C:/Program Files/Java/j
 Os testes que criam janelas precisam de uma sessão gráfica. No Linux, podem rodar com `xvfb-run`.
 `scripts/package.py` cria os pacotes completos usando os arquivos oficiais descritos em `vendor/README.md`.
 Não há publicação automática nem envio ao GitHub.
+
+## Testes e resultados
+
+- **350 verificações funcionais** passaram localmente no Windows: integração do editor, simulação, redimensionamento, layout, temas, alinhamento dos pinos e idioma.
+- As suítes automatizadas também passaram no GitHub em **Windows e Ubuntu com Xvfb**.
+- **28 verificações dos pacotes** passaram localmente.
+
+[Execução bem-sucedida no GitHub](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Relatório detalhado](docs/VERIFICACOES.md)
+
+São testes direcionados; não cobrem todos os recursos do Logisim. Ainda falta a conferência em um desktop Linux real.
 
 ## Compartilhar e contribuir
 

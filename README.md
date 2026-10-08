@@ -1,14 +1,43 @@
-# Logisim Panels — experimental UI proposal
+# Logisim Panels - experimental interface
 
-This fork hosts an independent interface experiment for **Logisim Evolution 5.0.0**: movable and resizable panels, a movable icon toolbar, themes, opacity, transitions, and English/pt-BR settings.
+An independent interface experiment for **Logisim Evolution 5.0.0**. Movable and resizable panels surround the original circuit editor and simulator; the icon toolbar can form rows or columns.
 
 - **[Download the Windows/Linux evaluation packages](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.1.0)**
-- **[Read the English guide](experimental/logisim-panels/README.en.md)** · **[Português (Brasil)](experimental/logisim-panels/README.md)**
-- **[Source and build instructions](experimental/logisim-panels/)** · **[Integration plan](experimental/logisim-panels/docs/UPSTREAM-INTEGRATION.md)**
+- **[English guide](experimental/logisim-panels/README.en.md)** · **[Português (Brasil)](experimental/logisim-panels/README.md)**
+- **[Source and build instructions](experimental/logisim-panels/)** · **[Upstream integration plan](experimental/logisim-panels/docs/UPSTREAM-INTEGRATION.md)**
 
-Status: experimental extension; Windows has targeted local verification, while a real Linux desktop test is pending. The implementation still uses the released 5.0.0 JAR and is not integrated into upstream's current Gradle build. This is not an official release or an accepted upstream proposal.
+## Screenshots
 
-The experiment is on **`logisim-panels`**. **`main`** retains the upstream source and history. The original README follows below.
+Actual screenshots of the Windows evaluation build, showing the included example circuit. These captures use Portuguese (Brazil); English is the application default.
+
+![Circuit workspace with movable Library, Properties, Simulation and Truth table panels](experimental/logisim-panels/docs/images/workspace.png)
+
+The icon toolbar reflects the open panels. Simulation controls operate the circuit inputs, and the truth table includes its propositional equation. Panels and the toolbar can be moved and resized.
+
+![Appearance settings: language, workspace theme, selection color, logic-1 color, panel opacity and transitions](experimental/logisim-panels/docs/images/settings.png)
+
+Appearance settings control language, workspace theme, selection and logic-1 colors, opacity and transitions independently.
+
+## Tests and current limitations
+
+| Verification | Result |
+|---|---|
+| Functional checks: editor integration, simulation, resizing/layout, appearance, pin alignment and language | 350 passed locally on Windows; automated suites also passed on Windows and Ubuntu/Xvfb |
+| Distribution files, resources, sources, Linux permissions and SHA-256 | 28 package checks passed locally |
+
+[Successful Windows and Ubuntu/Xvfb run](https://github.com/toybile/logisim-evolution/actions/runs/37790235710) · [Detailed verification report](experimental/logisim-panels/docs/VERIFICACOES.md)
+
+These are targeted checks, not complete coverage of every Logisim feature. FPGA, HDL and all third-party libraries have not been individually audited. A real Linux desktop test is still pending; Xvfb provides a virtual display.
+
+## Base version and upstream updates
+
+The downloadable application and experimental build use the **official 5.0.0 release JAR**. As checked on 8 October 2026, 5.0.0 is still the latest upstream release. Upstream `main` is 139 commits ahead of that tag (including fixes, refactoring and documentation); those later changes are **not yet included in this application**. For example, `main` adds TTL 74148, 744060 and 74123 components and improvements to signal logging.
+
+The fork preserves upstream source/history on `main`; the experiment is on `logisim-panels` under `experimental/logisim-panels/`. Having newer upstream source in the fork does not change the JAR used by our application. Incorporating those updates requires porting this interface to the current source and validating the integration.
+
+[Upstream release 5.0.0](https://github.com/logisim-evolution/logisim-evolution/releases/tag/v5.0.0) · [Changes since 5.0.0](https://github.com/logisim-evolution/logisim-evolution/compare/v5.0.0...main) · [Upstream changelog](https://github.com/logisim-evolution/logisim-evolution/blob/main/CHANGES.md)
+
+This is an independent evaluation release, not an official Logisim Evolution release or an accepted upstream proposal. The original project README follows below.
 
 ---
 

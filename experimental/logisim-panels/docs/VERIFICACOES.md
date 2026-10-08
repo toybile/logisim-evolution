@@ -33,4 +33,4 @@ No fork do GitHub, a rotina `.github/workflows/logisim-panels.yml` passou em Win
 e Ubuntu com display virtual (Xvfb), usando Java 21 e o JAR oficial da release 5.0.0.
 Resultado: https://github.com/toybile/logisim-evolution/actions/runs/37790235710
 Esta execução automatizada não substitui a conferência num desktop Linux real.
-Os pacotes não são assinados digitalmente e não foram publicados numa página pública de downloads.
+Os pacotes não são assinados digitalmente. A versão de avaliação está publicada em [downloads](https://github.com/toybile/logisim-evolution/releases/tag/panels-v0.1.0).
