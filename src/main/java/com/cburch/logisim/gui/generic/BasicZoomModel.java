@@ -88,6 +88,7 @@ public class BasicZoomModel implements ZoomModel {
       // Capture the cursor position before zoom listeners resize and scroll the canvas.
       final var cursor = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), viewport);
       final var position = viewport.getViewPosition();
+      final var origin = canvas.getDrawingOrigin();
       final var ratio = value / oldValue;
       final var nextX = (int) Math.round((position.x + cursor.x) * ratio - cursor.x);
       final var nextY = (int) Math.round((position.y + cursor.y) * ratio - cursor.y);
@@ -95,8 +96,9 @@ public class BasicZoomModel implements ZoomModel {
       setZoomFactor(value);
       // Update the scroll ranges before applying the position anchored at the cursor.
       viewport.doLayout();
-      canvas.getHorizontalScrollBar().setValue(nextX);
-      canvas.getVerticalScrollBar().setValue(nextY);
+      final var nextOrigin = canvas.getDrawingOrigin();
+      canvas.getHorizontalScrollBar().setValue(nextX + (int) Math.round((origin.x-nextOrigin.x)*value));
+      canvas.getVerticalScrollBar().setValue(nextY + (int) Math.round((origin.y-nextOrigin.y)*value));
     }
   }
 

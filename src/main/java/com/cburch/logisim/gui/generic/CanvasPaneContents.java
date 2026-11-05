@@ -32,5 +32,7 @@ public interface CanvasPaneContents extends Scrollable {
 
   void addMouseWheelListener(final MouseWheelListener listener);
 
+  default java.awt.Point getDrawingOrigin() { return new java.awt.Point(); }
+
   void center();
 }

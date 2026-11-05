@@ -2,7 +2,7 @@
 import argparse, hashlib, json, os, shutil, subprocess, tarfile, tempfile, zipfile
 from pathlib import Path, PurePosixPath
 
-ROOT=Path(__file__).resolve().parents[1];VERSION='0.2.0'
+ROOT=Path(__file__).resolve().parents[1];VERSION='0.2.1'
 parser=argparse.ArgumentParser();parser.add_argument('--jdk',type=Path,required=True);args=parser.parse_args()
 vendor=ROOT/'vendor';build=ROOT/'build';dist=ROOT/'dist';dist.mkdir(exist_ok=True)
 def sha(path):

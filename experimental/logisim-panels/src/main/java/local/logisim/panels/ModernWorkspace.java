@@ -41,6 +41,7 @@ final class ModernWorkspace extends JPanel {
   final javax.swing.Timer statusTimer;
   final SimulationPanel simulation;
   final CanvasSkin canvasSkin;
+  final CircuitNavigation navigation;
   final TruthPanel truth;
   final FloatingToolbar toolbar;
   final LibraryPanel library;
@@ -56,6 +57,7 @@ final class ModernWorkspace extends JPanel {
       if(retired)return;
       updateHeader();
       library.nextStructureCheck=0;
+      if(e.getAction()==ProjectEvent.ACTION_SET_CURRENT || e.getAction()==ProjectEvent.ACTION_SET_FILE)centerCircuit();
       if(e.getAction()==ProjectEvent.ACTION_SET_CURRENT ||
           e.getAction()==ProjectEvent.ACTION_SET_FILE || e.getAction()==ProjectEvent.ACTION_COMPLETE ||
           e.getAction()==ProjectEvent.UNDO_COMPLETE || e.getAction()==ProjectEvent.REDO_COMPLETE)
@@ -88,6 +90,7 @@ final class ModernWorkspace extends JPanel {
     catch(IOException ignored){}
     saveTimer=new javax.swing.Timer(500,e -> saveLayout()); saveTimer.setRepeats(false);
     canvasSkin=new CanvasSkin(frame.getCanvas());
+    navigation=new CircuitNavigation(frame.getCanvas());
     simulation=new SimulationPanel(project,() -> hint(I18n.t("Entrada alterada.")));
     truth=new TruthPanel(project,frame);
 
@@ -183,10 +186,10 @@ final class ModernWorkspace extends JPanel {
     zoomOverlay.setBackground(Color.WHITE);
 
     ZoomModel model=frame.getZoomModel();model.setShowGrid(Boolean.parseBoolean(saved.getProperty("grid","true")));
-    JButton percent=button("100%",I18n.t("Voltar ao zoom 100%"),() -> model.setZoomFactorCenter(1.0));
-    zoomOverlay.add(button("−",I18n.t("Diminuir zoom"),() -> model.setZoomFactorCenter(Math.max(.2,model.getZoomFactor()/1.2))));
+    JButton percent=button("100%",I18n.t("Voltar ao zoom 100%"),() -> model.setZoomFactor(1.0));
+    zoomOverlay.add(button("−",I18n.t("Diminuir zoom"),() -> model.setZoomFactor(Math.max(.2,model.getZoomFactor()/1.2))));
     zoomOverlay.add(percent);
-    zoomOverlay.add(button("+",I18n.t("Aumentar zoom"),() -> model.setZoomFactorCenter(Math.min(8,model.getZoomFactor()*1.2))));
+    zoomOverlay.add(button("+",I18n.t("Aumentar zoom"),() -> model.setZoomFactor(Math.min(8,model.getZoomFactor()*1.2))));
     zoomOverlay.add(button(I18n.t("Enquadrar"),I18n.t("Ajustar o circuito ao espaço disponível"),this::fitCircuit));
     model.addPropertyChangeListener(ZoomModel.ZOOM,e -> percent.setText(Math.round(model.getZoomFactor()*100)+"%"));
     percent.setText(Math.round(model.getZoomFactor()*100)+"%");
@@ -367,7 +370,12 @@ final class ModernWorkspace extends JPanel {
     updateHeader();arrangeSurface();revalidate();repaint();
   }
   void hint(String text){feedback.putClientProperty("i18n.text",null);feedback.setText(text);}
+  void centerCircuit(){
+    navigation.prepare();
+    frame.getCanvas().center();
+  }
   void fitCircuit(){
+    navigation.prepare();
     var circuit=project.getCurrentCircuit();if(circuit==null)return;
     var bounds=circuit.getBounds();if(bounds.getWidth()<=0||bounds.getHeight()<=0)return;
     int width=surface.getWidth(),height=surface.getHeight();
@@ -384,18 +392,19 @@ final class ModernWorkspace extends JPanel {
     double availableWidth=Math.max(200,right-left),availableHeight=Math.max(180,bottom-top);
     double zoom=Math.max(.2,Math.min(2.5,Math.min(availableWidth/(bounds.getWidth()+90.0),
         availableHeight/(bounds.getHeight()+80.0))));
-    frame.getZoomModel().setZoomFactorCenter(zoom);
+    frame.getZoomModel().setZoomFactor(zoom);
     double centerX=left+availableWidth/2,centerY=top+availableHeight/2;
     SwingUtilities.invokeLater(() -> {
       var pane=frame.getCanvas().getCanvasPane();
-      pane.getHorizontalScrollBar().setValue((int)Math.max(0,
-          (bounds.getX()+bounds.getWidth()/2.0)*zoom-centerX));
-      pane.getVerticalScrollBar().setValue((int)Math.max(0,
-          (bounds.getY()+bounds.getHeight()/2.0)*zoom-centerY));
+      var point=frame.getCanvas().circuitToCanvas(bounds.getX()+bounds.getWidth()/2.0,
+          bounds.getY()+bounds.getHeight()/2.0);
+      pane.getHorizontalScrollBar().setValue((int)Math.round(point.x-centerX));
+      pane.getVerticalScrollBar().setValue((int)Math.round(point.y-centerY));
     });
   }
   void dispose(){
     if(retired)return;saveLayout();retired=true;saveTimer.stop();statusTimer.stop();
+    navigation.dispose();
     Appearance.workspaces.remove(this);panels.values().forEach(FloatingPanel::dispose);
     project.removeProjectListener(projectListener);simulation.dispose();truth.dispose();toolbar.dispose();
   }
