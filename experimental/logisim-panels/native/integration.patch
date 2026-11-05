@@ -28,6 +28,80 @@ index 9d4e531dd..14ba2e3d3 100644
 +
 +// Build the experimental UI with the current native sources and dependencies.
 +apply(from = "experimental/logisim-panels/panels.gradle")
+diff --git a/src/main/java/com/cburch/logisim/gui/generic/BasicZoomModel.java b/src/main/java/com/cburch/logisim/gui/generic/BasicZoomModel.java
+index a66d13d50..647c64559 100644
+--- a/src/main/java/com/cburch/logisim/gui/generic/BasicZoomModel.java
++++ b/src/main/java/com/cburch/logisim/gui/generic/BasicZoomModel.java
+@@ -88,6 +88,7 @@ public class BasicZoomModel implements ZoomModel {
+       // Capture the cursor position before zoom listeners resize and scroll the canvas.
+       final var cursor = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), viewport);
+       final var position = viewport.getViewPosition();
++      final var origin = canvas.getDrawingOrigin();
+       final var ratio = value / oldValue;
+       final var nextX = (int) Math.round((position.x + cursor.x) * ratio - cursor.x);
+       final var nextY = (int) Math.round((position.y + cursor.y) * ratio - cursor.y);
+@@ -95,8 +96,9 @@ public class BasicZoomModel implements ZoomModel {
+       setZoomFactor(value);
+       // Update the scroll ranges before applying the position anchored at the cursor.
+       viewport.doLayout();
+-      canvas.getHorizontalScrollBar().setValue(nextX);
+-      canvas.getVerticalScrollBar().setValue(nextY);
++      final var nextOrigin = canvas.getDrawingOrigin();
++      canvas.getHorizontalScrollBar().setValue(nextX + (int) Math.round((origin.x-nextOrigin.x)*value));
++      canvas.getVerticalScrollBar().setValue(nextY + (int) Math.round((origin.y-nextOrigin.y)*value));
+     }
+   }
+ 
+diff --git a/src/main/java/com/cburch/logisim/gui/generic/CanvasPane.java b/src/main/java/com/cburch/logisim/gui/generic/CanvasPane.java
+index 1ed4435ad..8c0712c89 100644
+--- a/src/main/java/com/cburch/logisim/gui/generic/CanvasPane.java
++++ b/src/main/java/com/cburch/logisim/gui/generic/CanvasPane.java
+@@ -41,6 +41,8 @@ public class CanvasPane extends JScrollPane {
+     contents.setCanvasPane(this);
+   }
+ 
++  public java.awt.Point getDrawingOrigin() { return contents.getDrawingOrigin(); }
++
+   public Dimension getViewportSize() {
+     final var size = new Dimension();
+     getViewport().getSize(size);
+@@ -115,16 +117,19 @@ public class CanvasPane extends JScrollPane {
+       if (prop.equals(ZoomModel.ZOOM)) {
+         final var oldZoom = (Double) e.getOldValue();
+         var r = getViewport().getViewRect();
+-        final var cx = (r.x + r.width / 2) / oldZoom;
+-        final var cy = (r.y + r.height / 2) / oldZoom;
++        final var origin = contents.getDrawingOrigin();
++        final var cx = (r.x + r.width / 2.0) / oldZoom + origin.x;
++        final var cy = (r.y + r.height / 2.0) / oldZoom + origin.y;
+ 
+         final var newZoom = (Double) e.getNewValue();
++        contents.recomputeSize();
++        getViewport().doLayout();
++        final var nextOrigin = contents.getDrawingOrigin();
+         r = getViewport().getViewRect();
+-        final var hv = (int) (cx * newZoom) - r.width / 2;
+-        final var vv = (int) (cy * newZoom) - r.height / 2;
++        final var hv = (int) Math.round((cx - nextOrigin.x) * newZoom - r.width / 2.0);
++        final var vv = (int) Math.round((cy - nextOrigin.y) * newZoom - r.height / 2.0);
+         getHorizontalScrollBar().setValue(hv);
+         getVerticalScrollBar().setValue(vv);
+-        contents.recomputeSize();
+       } else if (prop.equals(ZoomModel.CENTER)) {
+         contents.center();
+       }
+diff --git a/src/main/java/com/cburch/logisim/gui/generic/CanvasPaneContents.java b/src/main/java/com/cburch/logisim/gui/generic/CanvasPaneContents.java
+index 4c06428d2..a0021b1f6 100644
+--- a/src/main/java/com/cburch/logisim/gui/generic/CanvasPaneContents.java
++++ b/src/main/java/com/cburch/logisim/gui/generic/CanvasPaneContents.java
+@@ -32,5 +32,7 @@ public interface CanvasPaneContents extends Scrollable {
+ 
+   void addMouseWheelListener(final MouseWheelListener listener);
+ 
++  default java.awt.Point getDrawingOrigin() { return new java.awt.Point(); }
++
+   void center();
+ }
 diff --git a/src/main/java/com/cburch/logisim/gui/generic/GridPainter.java b/src/main/java/com/cburch/logisim/gui/generic/GridPainter.java
 index 69ac4ebfa..bd4259904 100644
 --- a/src/main/java/com/cburch/logisim/gui/generic/GridPainter.java
@@ -110,10 +184,91 @@ index 69ac4ebfa..bd4259904 100644
          }
        }
 diff --git a/src/main/java/com/cburch/logisim/gui/main/Canvas.java b/src/main/java/com/cburch/logisim/gui/main/Canvas.java
-index 449b65f6b..86346cb24 100644
+index 449b65f6b..2f201dcc0 100644
 --- a/src/main/java/com/cburch/logisim/gui/main/Canvas.java
 +++ b/src/main/java/com/cburch/logisim/gui/main/Canvas.java
-@@ -472,7 +472,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+@@ -122,6 +122,34 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+   private Tool tempTool;
+   private MouseMappings mappings;
+   private CanvasPane canvasPane;
++  private Rectangle workspaceArea;
++
++  /** Presentation coordinates only; circuit serialization retains its native coordinates. */
++  public void setWorkspaceArea(Rectangle area) {
++    final var previous = getDrawingOrigin();
++    final var position = canvasPane == null ? new Point() : canvasPane.getViewport().getViewPosition();
++    workspaceArea = area == null ? null : new Rectangle(area);
++    computeSize(true);
++    if (canvasPane != null) {
++      canvasPane.getViewport().doLayout();
++      final var next = getDrawingOrigin();
++      setScrollBar(position.x + (int) Math.round((previous.x-next.x)*getZoomFactor()),
++          position.y + (int) Math.round((previous.y-next.y)*getZoomFactor()));
++    }
++    repaint();
++  }
++
++  @Override
++  public Point getDrawingOrigin() {
++    return workspaceArea == null ? new Point() : new Point(workspaceArea.x,workspaceArea.y);
++  }
++
++  public Point circuitToCanvas(double x, double y) {
++    final var origin=getDrawingOrigin();
++    return new Point((int)Math.round((x-origin.x)*getZoomFactor()),
++        (int)Math.round((y-origin.y)*getZoomFactor()));
++  }
++
+   private Bounds oldPreferredSize;
+   private volatile boolean inPaint = false; // only for within paintComponent
+ 
+@@ -260,14 +288,14 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+     final var xpos =
+         (int)
+             (Math.round(
+-                bounds.getX() * getZoomFactor()
++                (bounds.getX() - getDrawingOrigin().x) * getZoomFactor()
+                     - (canvasPane.getViewport().getSize().getWidth()
+                             - bounds.getWidth() * getZoomFactor())
+                         / 2));
+     final var ypos =
+         (int)
+             (Math.round(
+-                bounds.getY() * getZoomFactor()
++                (bounds.getY() - getDrawingOrigin().y) * getZoomFactor()
+                     - (canvasPane.getViewport().getSize().getHeight()
+                             - bounds.getHeight() * getZoomFactor())
+                         / 2));
+@@ -301,6 +329,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+       width = bounds.getX() + bounds.getWidth() + viewport.getWidth();
+       height = bounds.getY() + bounds.getHeight() + viewport.getHeight();
+     }
++    if (workspaceArea != null) { width = workspaceArea.width; height = workspaceArea.height; }
+     final var dim = (canvasPane == null)
+             ? new Dimension(width, height)
+             : canvasPane.supportPreferredSize(width, height);
+@@ -342,6 +371,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+               (int) (viewableBase.width / zoom),
+               (int) (viewableBase.height / zoom));
+     }
++    final var origin=getDrawingOrigin();
++    viewable.translate(origin.x,origin.y);
+     return viewable;
+   }
+ 
+@@ -389,8 +420,9 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+ 
+     final var zoom = getZoomFactor();
+     final var view = canvasPane.getViewport().getViewRect();
+-    final var deltaX = autoPanDelta((int) Math.round(x * zoom), view.x, view.width);
+-    final var deltaY = autoPanDelta((int) Math.round(y * zoom), view.y, view.height);
++    final var point = circuitToCanvas(x,y);
++    final var deltaX = autoPanDelta(point.x, view.x, view.width);
++    final var deltaY = autoPanDelta(point.y, view.y, view.height);
+     autoPanDeltaX = deltaX;
+     autoPanDeltaY = deltaY;
+ 
+@@ -472,7 +504,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
      viewport.setErrorMessage(message, color);
    }
  
@@ -122,6 +277,110 @@ index 449b65f6b..86346cb24 100644
      return painter.getGridPainter();
    }
  
+@@ -624,6 +656,11 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+   @Override
+   public void repaint(int x, int y, int width, int height) {
+     final var zoom = getZoomFactor();
++    if (workspaceArea != null) {
++      final var point=circuitToCanvas(x,y);
++      super.repaint(point.x-2,point.y-2,(int)Math.ceil(width*zoom)+4,(int)Math.ceil(height*zoom)+4);
++      return;
++    }
+     if (zoom < 1.0) {
+       final var newX = (int) Math.floor(x * zoom);
+       final var newY = (int) Math.floor(y * zoom);
+@@ -643,7 +680,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+   @Override
+   public void repaint(Rectangle r) {
+     final var zoom = getZoomFactor();
+-    if (zoom == 1.0) {
++    if (zoom == 1.0 && workspaceArea == null) {
+       super.repaint(r);
+     } else {
+       this.repaint(r.x, r.y, r.width, r.height);
+@@ -655,6 +692,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+     if (zoom != 1.0) {
+       zoomEvent(e, zoom);
+     }
++    final var origin=getDrawingOrigin();
++    e.translatePoint(origin.x,origin.y);
+   }
+ 
+   public void updateArrows() {
+@@ -707,6 +746,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+               (int) (viewableBase.width / zoom),
+               (int) (viewableBase.height / zoom));
+     }
++    final var origin=getDrawingOrigin();
++    viewable.translate(origin.x,origin.y);
+     final var isWest = x0 < viewable.x;
+     final var isEast = x1 >= viewable.x + viewable.width;
+     final var isNorth = y0 < viewable.y;
+@@ -745,6 +786,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+   }
+ 
+   public void showPopupMenu(JPopupMenu menu, int x, int y) {
++    final var origin=getDrawingOrigin();
++    x-=origin.x; y-=origin.y;
+     final var zoom = getZoomFactor();
+     if (zoom != 1.0) {
+       x = (int) Math.round(x * zoom);
+@@ -756,6 +799,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+   }
+ 
+   private void unrepairMouseEvent(MouseEvent e) {
++    final var origin=getDrawingOrigin();
++    e.translatePoint(-origin.x,-origin.y);
+     final var zoom = getZoomFactor();
+     if (zoom != 1.0) {
+       zoomEvent(e, 1.0 / zoom);
+@@ -790,6 +835,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+     var zoomControl = proj.getFrame().getZoomControl();
+     final var oldView = getViewableBaseRect();
+     final var oldZoom = getZoomFactor();
++    final var oldOrigin = getDrawingOrigin();
+     if (zoomIn) {
+       zoomControl.zoomIn();
+     } else {
+@@ -798,12 +844,12 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+     if (mouseLocation != null) {
+       final var newZoom = getZoomFactor();
+ 
+-      final var mouseInViewX = ((mouseLocation.x * oldZoom) - oldView.x) / oldView.width;
+-      final var mouseInViewY = ((mouseLocation.y * oldZoom) - oldView.y) / oldView.height;
++      final var mouseInViewX = (((mouseLocation.x-oldOrigin.x) * oldZoom) - oldView.x) / oldView.width;
++      final var mouseInViewY = (((mouseLocation.y-oldOrigin.y) * oldZoom) - oldView.y) / oldView.height;
+ 
+       final var newView = getViewableBaseRect();
+-      final var newViewOffsetX = (mouseLocation.x * newZoom) - (newView.width * mouseInViewX);
+-      final var newViewOffsetY = (mouseLocation.y * newZoom) - (newView.height * mouseInViewY);
++      final var newViewOffsetX = ((mouseLocation.x-getDrawingOrigin().x) * newZoom) - (newView.width * mouseInViewX);
++      final var newViewOffsetY = ((mouseLocation.y-getDrawingOrigin().y) * newZoom) - (newView.height * mouseInViewY);
+ 
+       viewport.doLayout();
+       setHorizontalScrollBar((int) Math.round(newViewOffsetX));
+@@ -896,7 +942,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
+         final var zoomModel = proj.getFrame().getZoomModel();
+         double zoomFactor = zoomModel.getZoomFactor();
+         scrollRectToVisible(
+-            new Rectangle((int) (e.getX() * zoomFactor), (int) (e.getY() * zoomFactor), 1, 1));
++            new Rectangle(circuitToCanvas(e.getX(),e.getY()).x, circuitToCanvas(e.getX(),e.getY()).y, 1, 1));
+       }
+     }
+ 
+diff --git a/src/main/java/com/cburch/logisim/gui/main/CanvasPainter.java b/src/main/java/com/cburch/logisim/gui/main/CanvasPainter.java
+index 043511472..ce9d8befc 100644
+--- a/src/main/java/com/cburch/logisim/gui/main/CanvasPainter.java
++++ b/src/main/java/com/cburch/logisim/gui/main/CanvasPainter.java
+@@ -194,6 +194,8 @@ class CanvasPainter implements PropertyChangeListener {
+     if (zoomFactor != 1.0 && gfxScaled instanceof Graphics2D g2d) {
+       g2d.scale(zoomFactor, zoomFactor);
+     }
++    final var origin = canvas.getDrawingOrigin();
++    if (origin != null) gfxScaled.translate(-origin.x,-origin.y);
+     final var circ = proj.getCurrentCircuit();
+     if (circ == null) {
+       gfxScaled.dispose();
 diff --git a/src/main/java/com/cburch/logisim/gui/main/Frame.java b/src/main/java/com/cburch/logisim/gui/main/Frame.java
 index c09d0234c..950e7e459 100644
 --- a/src/main/java/com/cburch/logisim/gui/main/Frame.java
@@ -155,23 +414,632 @@ diff --git a/src/main/java/com/cburch/logisim/std/wiring/Probe.java b/src/main/j
 index 1770c9455..7f476198f 100644
 --- a/src/main/java/com/cburch/logisim/std/wiring/Probe.java
 +++ b/src/main/java/com/cburch/logisim/std/wiring/Probe.java
-@@ -40,6 +40,12 @@ import java.awt.event.KeyEvent;
- import java.util.Objects;
- 
- public class Probe extends InstanceFactory implements DynamicElementProvider {
+@@ -1,410 +1,444 @@
+-/*
+- * Logisim-evolution - digital logic design tool and simulator
+- * Copyright by the Logisim-evolution developers
+- *
+- * https://github.com/logisim-evolution/
+- *
+- * This is free software released under GNU GPLv3 license
+- */
+-
+-package com.cburch.logisim.std.wiring;
+-
+-import static com.cburch.logisim.std.Strings.S;
+-
+-import com.cburch.logisim.LogisimVersion;
+-import com.cburch.logisim.circuit.RadixOption;
+-import com.cburch.logisim.circuit.appear.DynamicElement;
+-import com.cburch.logisim.circuit.appear.DynamicElementProvider;
+-import com.cburch.logisim.data.Attribute;
+-import com.cburch.logisim.data.AttributeSet;
+-import com.cburch.logisim.data.BitWidth;
+-import com.cburch.logisim.data.Bounds;
+-import com.cburch.logisim.data.Direction;
+-import com.cburch.logisim.data.Value;
+-import com.cburch.logisim.instance.Instance;
+-import com.cburch.logisim.instance.InstanceData;
+-import com.cburch.logisim.instance.InstanceFactory;
+-import com.cburch.logisim.instance.InstanceLogger;
+-import com.cburch.logisim.instance.InstancePainter;
+-import com.cburch.logisim.instance.InstanceState;
+-import com.cburch.logisim.instance.Port;
+-import com.cburch.logisim.instance.StdAttr;
+-import com.cburch.logisim.prefs.AppPreferences;
+-import com.cburch.logisim.prefs.PrefMonitorBooleanConvert;
+-import com.cburch.logisim.tools.key.DirectionConfigurator;
+-import com.cburch.logisim.util.GraphicsUtil;
+-import java.awt.Color;
+-import java.awt.Graphics;
+-import java.awt.Graphics2D;
+-import java.awt.event.KeyEvent;
+-import java.util.Objects;
+-
+-public class Probe extends InstanceFactory implements DynamicElementProvider {
+-  /**
+-   * Unique identifier of the tool, used as reference in project files. Do NOT change as it will
+-   * prevent project files from loading.
+-   *
+-   * <p>Identifier value must MUST be unique string among all tools.
+-   */
+-  public static final String _ID = "Probe";
+-
+-  public static class ProbeLogger extends InstanceLogger {
+-    public ProbeLogger() {}
+-
+-    @Override
+-    public String getLogName(InstanceState state, Object option) {
+-      String ret = state.getAttributeValue(StdAttr.LABEL);
+-      return ret != null && !ret.equals("") ? ret : null;
+-    }
+-
+-    @Override
+-    public BitWidth getBitWidth(InstanceState state, Object option) {
+-      ProbeAttributes attrs = (ProbeAttributes) state.getAttributeSet();
+-      return attrs.width;
+-    }
+-
+-    @Override
+-    public Value getLogValue(InstanceState state, Object option) {
+-      return getValue(state);
+-    }
+-  }
+-
+-  private static class StateData implements InstanceData, Cloneable {
+-    Value curValue = Value.NIL;
+-
+-    @Override
+-    public Object clone() {
+-      try {
+-        return super.clone();
+-      } catch (CloneNotSupportedException e) {
+-        return null;
+-      }
+-    }
+-  }
+-
+-  public static Bounds getOffsetBounds(
+-      Direction dir, BitWidth width, RadixOption radix, boolean NewLayout, boolean IsPin) {
+-    int len =
+-        radix == null || radix == RadixOption.RADIX_2
+-            ? width.getWidth()
+-            : radix.getMaxLength(width);
+-    int bwidth, bheight, x, y;
+-    if (radix == RadixOption.RADIX_2) {
+-      int maxBitsPerRow = 8;
+-      int maxRows = 8;
+-      int rows = len / maxBitsPerRow;
+-      if (len > rows * maxBitsPerRow) rows++;
+-      bwidth = (len < 2) ? 20 : (len >= maxBitsPerRow) ? maxBitsPerRow * 10 : len * 10;
+-      bheight = (rows < 2) ? 20 : (rows >= maxRows) ? maxRows * 20 : rows * 20;
+-    } else {
+-      if (len < 2) bwidth = 20;
+-      else bwidth = len * Pin.DIGIT_WIDTH;
+-      bheight = 20;
+-    }
+-    if (NewLayout) bwidth += (len == 1) ? 20 : 25;
+-    bwidth = ((bwidth + 9) / 10) * 10;
+-    if (dir == Direction.EAST) {
+-      x = -bwidth;
+-      y = -(bheight / 2);
+-    } else if (dir == Direction.WEST) {
+-      x = 0;
+-      y = -(bheight / 2);
+-    } else if (dir == Direction.SOUTH) {
+-      if (NewLayout && IsPin) {
+-        x = bwidth;
+-        bwidth = bheight;
+-        bheight = x;
+-      }
+-      x = -(bwidth / 2);
+-      y = -bheight;
+-    } else {
+-      if (NewLayout && IsPin) {
+-        x = bwidth;
+-        bwidth = bheight;
+-        bheight = x;
+-      }
+-      x = -(bwidth / 2);
+-      y = 0;
+-    }
+-    return Bounds.create(x, y, bwidth, bheight);
+-  }
+-
+-  public static Value getValue(InstanceState state) {
+-    StateData data = (StateData) state.getData();
+-    return data == null ? Value.NIL : data.curValue;
+-  }
+-
+-  static void paintValue(InstancePainter painter, Value value) {
+-    if (painter.getAttributeValue(ProbeAttributes.PROBEAPPEARANCE)
+-        == ProbeAttributes.APPEAR_EVOLUTION_NEW) paintValue(painter, value, false);
+-    else paintOldStyleValue(painter, value);
+-  }
+-
+-  static void paintOldStyleValue(InstancePainter painter, Value value) {
+-    Graphics g = painter.getGraphics();
+-    Bounds bds = painter.getBounds(); // intentionally with no graphics
+-    // object - we don't want label
+-    // included
+-
+-    RadixOption radix = painter.getAttributeValue(RadixOption.ATTRIBUTE);
+-    if (radix == null || radix == RadixOption.RADIX_2) {
+-      int x = bds.getX();
+-      int y = bds.getY();
+-      int wid = value.getWidth();
+-      if (wid == 0) {
+-        x += bds.getWidth() / 2;
+-        y += bds.getHeight() / 2;
+-        GraphicsUtil.switchToWidth(g, 2);
+-        g.drawLine(x - 4, y, x + 4, y);
+-        return;
+-      }
+-      int x0 = bds.getX() + bds.getWidth() - 5;
+-      int compWidth = wid * 10;
+-      if (compWidth < bds.getWidth() - 3) {
+-        x0 = bds.getX() + (bds.getWidth() + compWidth) / 2 - 5;
+-      }
+-      int cx = x0;
+-      int cy = bds.getY() + bds.getHeight() - 10;
+-      int cur = 0;
+-      for (int k = 0; k < wid; k++) {
+-        GraphicsUtil.drawCenteredText(g, value.get(k).toDisplayString(), cx, cy);
+-        ++cur;
+-        if (cur == 8) {
+-          cur = 0;
+-          cx = x0;
+-          cy -= 14;
+-        } else {
+-          cx -= 10;
+-        }
+-      }
+-    } else {
+-      String text = radix.toString(value);
+-      GraphicsUtil.drawCenteredText(
+-          g, text, bds.getX() + bds.getWidth() / 2, bds.getY() + bds.getHeight() / 2 - 2);
+-    }
+-  }
+-
+-  @Override
+-  public Object getDefaultAttributeValue(Attribute<?> attr, LogisimVersion ver) {
+-    return attr.equals(ProbeAttributes.PROBEAPPEARANCE)
+-        ? ProbeAttributes.getDefaultProbeAppearance()
+-        : super.getDefaultAttributeValue(attr, ver);
+-  }
+-
+-  static void paintValue(InstancePainter painter, Value value, boolean colored) {
+-    Graphics g = painter.getGraphics();
+-    Graphics2D g2 = (Graphics2D) g;
+-    Bounds bds = painter.getBounds(); // intentionally with no graphics
+-    // object - we don't want label
+-    // included
+-    g.setFont(Pin.DEFAULT_FONT);
+-    boolean IsOutput =
+-        (painter.getAttributeSet().containsAttribute(Pin.ATTR_TYPE))
+-            ? painter.getAttributeValue(Pin.ATTR_TYPE) == Pin.OUTPUT
+-            : false;
+-    if (painter.getAttributeValue(ProbeAttributes.PROBEAPPEARANCE)
+-        != ProbeAttributes.APPEAR_EVOLUTION_NEW) {
+-      if (colored) {
+-        int x = bds.getX();
+-        int y = bds.getY();
+-        if (!IsOutput) {
+-          g.setColor(value.get(0).getColor());
+-          g.fillOval(x + 5, y + 4, 11, 13);
+-        }
+-        if (!IsOutput) g.setColor(Color.WHITE);
+-        GraphicsUtil.drawCenteredText(g, value.get(0).toDisplayString(), x + 10, y + 9);
+-      } else paintOldStyleValue(painter, value);
+-      return;
+-    }
+-    RadixOption radix = painter.getAttributeValue(RadixOption.ATTRIBUTE);
+-    int LabelValueXOffset = 15;
+-    if (radix != null && radix != RadixOption.RADIX_2) LabelValueXOffset += 3;
+-    g.setColor(Color.BLUE);
+-    g2.scale(0.7, 0.7);
+-    g2.drawString(
+-        radix.getIndexChar(),
+-        (int) ((bds.getX() + bds.getWidth() - LabelValueXOffset) / 0.7),
+-        (int) ((bds.getY() + bds.getHeight() - 2) / 0.7));
+-    g2.scale(1.0 / 0.7, 1.0 / 0.7);
+-    g.setColor(Color.BLACK);
+-    if (radix == null || radix == RadixOption.RADIX_2) {
+-      int x = bds.getX();
+-      int y = bds.getY();
+-      int wid = value.getWidth();
+-      if (wid == 0) {
+-        x += bds.getWidth() / 2;
+-        y += bds.getHeight() / 2;
+-        GraphicsUtil.switchToWidth(g, 2);
+-        g.drawLine(x - 4, y, x + 4, y);
+-        return;
+-      }
+-      int yoffset = 12;
+-      int x0 = bds.getX() + bds.getWidth() - 20;
+-      int cx = x0;
+-      int cy = bds.getY() + bds.getHeight() - yoffset;
+-      int cur = 0;
+-      for (int k = 0; k < wid; k++) {
+-        GraphicsUtil.drawCenteredText(g, value.get(k).toDisplayString(), cx, cy);
+-        ++cur;
+-        if (cur == 8) {
+-          cur = 0;
+-          cx = x0;
+-          cy -= 20;
+-        } else {
+-          cx -= 10;
+-        }
+-      }
+-    } else {
+-      String text = radix.toString(value);
+-      int cx = bds.getX() + bds.getWidth() - LabelValueXOffset - 2;
+-      for (int k = text.length() - 1; k >= 0; k--) {
+-        GraphicsUtil.drawText(
+-            g,
+-            text.substring(k, k + 1),
+-            cx,
+-            bds.getY() + bds.getHeight() / 2 - 1,
+-            GraphicsUtil.H_RIGHT,
+-            GraphicsUtil.H_CENTER);
+-        cx -= Pin.DIGIT_WIDTH;
+-      }
+-    }
+-  }
+-
+-  public static final Probe FACTORY = new Probe();
+-
+-  public Probe() {
+-    super(_ID, S.getter("probeComponent"));
+-    setIconName("probe.gif");
+-    setKeyConfigurator(new DirectionConfigurator(StdAttr.LABEL_LOC, KeyEvent.ALT_DOWN_MASK));
+-    setFacingAttribute(StdAttr.FACING);
+-    setInstanceLogger(ProbeLogger.class);
+-  }
+-
+-  //
+-  // methods for instances
+-  //
+-  @Override
+-  protected void configureNewInstance(Instance instance) {
+-    instance.setPorts(new Port[] {new Port(0, 0, Port.INPUT, BitWidth.UNKNOWN)});
+-    instance.addAttributeListener();
+-    ((PrefMonitorBooleanConvert) AppPreferences.NEW_INPUT_OUTPUT_SHAPES)
+-        .addConvertListener((ProbeAttributes) instance.getAttributeSet());
+-    instance.computeLabelTextField(Instance.AVOID_LEFT);
+-  }
+-
+-  @Override
+-  public AttributeSet createAttributeSet() {
+-    AttributeSet attrs = new ProbeAttributes();
+-    attrs.setValue(ProbeAttributes.PROBEAPPEARANCE, ProbeAttributes.getDefaultProbeAppearance());
+-    return attrs;
+-  }
+-
+-  @Override
+-  public Bounds getOffsetBounds(AttributeSet attrsBase) {
+-    ProbeAttributes attrs = (ProbeAttributes) attrsBase;
+-    return getOffsetBounds(
+-        attrs.facing,
+-        attrs.width,
+-        attrs.radix,
+-        attrs.appearance == ProbeAttributes.APPEAR_EVOLUTION_NEW,
+-        false);
+-  }
+-
+-  @Override
+-  public boolean isHDLSupportedComponent(AttributeSet attrs) {
+-    return true;
+-  }
+-
+-  @Override
+-  protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
+-    if (attr == StdAttr.LABEL_LOC) {
+-      instance.computeLabelTextField(Instance.AVOID_LEFT);
+-    } else if (attr == StdAttr.FACING
+-        || attr == RadixOption.ATTRIBUTE
+-        || attr == ProbeAttributes.PROBEAPPEARANCE) {
+-      instance.recomputeBounds();
+-      instance.computeLabelTextField(Instance.AVOID_LEFT);
+-    }
+-  }
+-
+-  //
+-  // graphics methods
+-  //
+-  @Override
+-  public void paintGhost(InstancePainter painter) {
+-    Graphics g = painter.getGraphics();
+-    Bounds bds = painter.getOffsetBounds();
+-    g.drawOval(bds.getX() + 1, bds.getY() + 1, bds.getWidth() - 1, bds.getHeight() - 1);
+-  }
+-
+-  @Override
+-  public void paintInstance(InstancePainter painter) {
+-    Value value = getValue(painter);
+-
+-    Graphics g = painter.getGraphics();
+-    Bounds bds = painter.getBounds(); // intentionally with no graphics
+-    // object - we don't want label
+-    // included
+-    int x = bds.getX();
+-    int y = bds.getY();
+-    Color back = new Color(0xff, 0xf0, 0x99);
+-    if (value.getWidth() <= 1) {
+-      g.setColor(back);
+-      g.fillOval(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2);
+-      g.setColor(Color.lightGray);
+-      g.drawOval(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2);
+-    } else {
+-      g.setColor(back);
+-      g.fillRoundRect(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2, 20, 20);
+-      g.setColor(Color.lightGray);
+-      g.drawRoundRect(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2, 20, 20);
+-    }
+-
+-    g.setColor(Color.GRAY);
+-    painter.drawLabel();
+-    g.setColor(Color.DARK_GRAY);
+-
+-    if (!painter.getShowState()) {
+-      if (value.getWidth() > 0) {
+-        GraphicsUtil.drawCenteredText(
+-            g,
+-            "x" + value.getWidth(),
+-            bds.getX() + bds.getWidth() / 2,
+-            bds.getY() + bds.getHeight() / 2);
+-      }
+-    } else {
+-      paintValue(painter, value);
+-    }
+-
+-    painter.drawPorts();
+-  }
+-
+-  @Override
+-  public void propagate(InstanceState state) {
+-    StateData oldData = (StateData) state.getData();
+-    Value oldValue = oldData == null ? Value.NIL : oldData.curValue;
+-    Value newValue = state.getPortValue(0);
+-    boolean same = Objects.equals(oldValue, newValue);
+-    if (!same) {
+-      if (oldData == null) {
+-        oldData = new StateData();
+-        oldData.curValue = newValue;
+-        state.setData(oldData);
+-      } else {
+-        oldData.curValue = newValue;
+-      }
+-      int oldWidth = oldValue == null ? 1 : oldValue.getBitWidth().getWidth();
+-      int newWidth = newValue.getBitWidth().getWidth();
+-      if (oldWidth != newWidth) {
+-        ProbeAttributes attrs = (ProbeAttributes) state.getAttributeSet();
+-        attrs.width = newValue.getBitWidth();
+-        state.getInstance().recomputeBounds();
+-        state.getInstance().computeLabelTextField(Instance.AVOID_LEFT);
+-      }
+-    }
+-  }
+-
+-  public DynamicElement createDynamicElement(int x, int y, DynamicElement.Path path) {
+-    return new ProbeShape(x, y, path);
+-  }
+-}
++/*
++ * Logisim-evolution - digital logic design tool and simulator
++ * Copyright by the Logisim-evolution developers
++ *
++ * https://github.com/logisim-evolution/
++ *
++ * This is free software released under GNU GPLv3 license
++ */
++
++package com.cburch.logisim.std.wiring;
++
++import static com.cburch.logisim.std.Strings.S;
++
++import com.cburch.logisim.LogisimVersion;
++import com.cburch.logisim.circuit.RadixOption;
++import com.cburch.logisim.circuit.appear.DynamicElement;
++import com.cburch.logisim.circuit.appear.DynamicElementProvider;
++import com.cburch.logisim.data.Attribute;
++import com.cburch.logisim.data.AttributeSet;
++import com.cburch.logisim.data.BitWidth;
++import com.cburch.logisim.data.Bounds;
++import com.cburch.logisim.data.Direction;
++import com.cburch.logisim.data.Value;
++import com.cburch.logisim.instance.Instance;
++import com.cburch.logisim.instance.InstanceData;
++import com.cburch.logisim.instance.InstanceFactory;
++import com.cburch.logisim.instance.InstanceLogger;
++import com.cburch.logisim.instance.InstancePainter;
++import com.cburch.logisim.instance.InstanceState;
++import com.cburch.logisim.instance.Port;
++import com.cburch.logisim.instance.StdAttr;
++import com.cburch.logisim.prefs.AppPreferences;
++import com.cburch.logisim.prefs.PrefMonitorBooleanConvert;
++import com.cburch.logisim.tools.key.DirectionConfigurator;
++import com.cburch.logisim.util.GraphicsUtil;
++import java.awt.Color;
++import java.awt.Graphics;
++import java.awt.Graphics2D;
++import java.awt.event.KeyEvent;
++import java.util.Objects;
++
++public class Probe extends InstanceFactory implements DynamicElementProvider {
 +  // Modified 2026-10-08: optional centered, bold presentation for one-bit pin values.
 +  // The native value, propagation, hit testing and bus rendering are preserved.
 +  private static boolean modernPinValues;
 +  private static final java.awt.Font MODERN_DIGIT_FONT =
 +      local.logisim.panels.UiFonts.font("Trebuchet MS", java.awt.Font.BOLD, 12);
 +  public static void setModernPinValues(boolean enabled) { modernPinValues = enabled; }
-   /**
-    * Unique identifier of the tool, used as reference in project files. Do NOT change as it will
-    * prevent project files from loading.
-@@ -207,6 +213,34 @@ public class Probe extends InstanceFactory implements DynamicElementProvider {
-       if (colored) {
-         int x = bds.getX();
-         int y = bds.getY();
++  /**
++   * Unique identifier of the tool, used as reference in project files. Do NOT change as it will
++   * prevent project files from loading.
++   *
++   * <p>Identifier value must MUST be unique string among all tools.
++   */
++  public static final String _ID = "Probe";
++
++  public static class ProbeLogger extends InstanceLogger {
++    public ProbeLogger() {}
++
++    @Override
++    public String getLogName(InstanceState state, Object option) {
++      String ret = state.getAttributeValue(StdAttr.LABEL);
++      return ret != null && !ret.equals("") ? ret : null;
++    }
++
++    @Override
++    public BitWidth getBitWidth(InstanceState state, Object option) {
++      ProbeAttributes attrs = (ProbeAttributes) state.getAttributeSet();
++      return attrs.width;
++    }
++
++    @Override
++    public Value getLogValue(InstanceState state, Object option) {
++      return getValue(state);
++    }
++  }
++
++  private static class StateData implements InstanceData, Cloneable {
++    Value curValue = Value.NIL;
++
++    @Override
++    public Object clone() {
++      try {
++        return super.clone();
++      } catch (CloneNotSupportedException e) {
++        return null;
++      }
++    }
++  }
++
++  public static Bounds getOffsetBounds(
++      Direction dir, BitWidth width, RadixOption radix, boolean NewLayout, boolean IsPin) {
++    int len =
++        radix == null || radix == RadixOption.RADIX_2
++            ? width.getWidth()
++            : radix.getMaxLength(width);
++    int bwidth, bheight, x, y;
++    if (radix == RadixOption.RADIX_2) {
++      int maxBitsPerRow = 8;
++      int maxRows = 8;
++      int rows = len / maxBitsPerRow;
++      if (len > rows * maxBitsPerRow) rows++;
++      bwidth = (len < 2) ? 20 : (len >= maxBitsPerRow) ? maxBitsPerRow * 10 : len * 10;
++      bheight = (rows < 2) ? 20 : (rows >= maxRows) ? maxRows * 20 : rows * 20;
++    } else {
++      if (len < 2) bwidth = 20;
++      else bwidth = len * Pin.DIGIT_WIDTH;
++      bheight = 20;
++    }
++    if (NewLayout) bwidth += (len == 1) ? 20 : 25;
++    bwidth = ((bwidth + 9) / 10) * 10;
++    if (dir == Direction.EAST) {
++      x = -bwidth;
++      y = -(bheight / 2);
++    } else if (dir == Direction.WEST) {
++      x = 0;
++      y = -(bheight / 2);
++    } else if (dir == Direction.SOUTH) {
++      if (NewLayout && IsPin) {
++        x = bwidth;
++        bwidth = bheight;
++        bheight = x;
++      }
++      x = -(bwidth / 2);
++      y = -bheight;
++    } else {
++      if (NewLayout && IsPin) {
++        x = bwidth;
++        bwidth = bheight;
++        bheight = x;
++      }
++      x = -(bwidth / 2);
++      y = 0;
++    }
++    return Bounds.create(x, y, bwidth, bheight);
++  }
++
++  public static Value getValue(InstanceState state) {
++    StateData data = (StateData) state.getData();
++    return data == null ? Value.NIL : data.curValue;
++  }
++
++  static void paintValue(InstancePainter painter, Value value) {
++    if (painter.getAttributeValue(ProbeAttributes.PROBEAPPEARANCE)
++        == ProbeAttributes.APPEAR_EVOLUTION_NEW) paintValue(painter, value, false);
++    else paintOldStyleValue(painter, value);
++  }
++
++  static void paintOldStyleValue(InstancePainter painter, Value value) {
++    Graphics g = painter.getGraphics();
++    Bounds bds = painter.getBounds(); // intentionally with no graphics
++    // object - we don't want label
++    // included
++
++    RadixOption radix = painter.getAttributeValue(RadixOption.ATTRIBUTE);
++    if (radix == null || radix == RadixOption.RADIX_2) {
++      int x = bds.getX();
++      int y = bds.getY();
++      int wid = value.getWidth();
++      if (wid == 0) {
++        x += bds.getWidth() / 2;
++        y += bds.getHeight() / 2;
++        GraphicsUtil.switchToWidth(g, 2);
++        g.drawLine(x - 4, y, x + 4, y);
++        return;
++      }
++      int x0 = bds.getX() + bds.getWidth() - 5;
++      int compWidth = wid * 10;
++      if (compWidth < bds.getWidth() - 3) {
++        x0 = bds.getX() + (bds.getWidth() + compWidth) / 2 - 5;
++      }
++      int cx = x0;
++      int cy = bds.getY() + bds.getHeight() - 10;
++      int cur = 0;
++      for (int k = 0; k < wid; k++) {
++        GraphicsUtil.drawCenteredText(g, value.get(k).toDisplayString(), cx, cy);
++        ++cur;
++        if (cur == 8) {
++          cur = 0;
++          cx = x0;
++          cy -= 14;
++        } else {
++          cx -= 10;
++        }
++      }
++    } else {
++      String text = radix.toString(value);
++      GraphicsUtil.drawCenteredText(
++          g, text, bds.getX() + bds.getWidth() / 2, bds.getY() + bds.getHeight() / 2 - 2);
++    }
++  }
++
++  @Override
++  public Object getDefaultAttributeValue(Attribute<?> attr, LogisimVersion ver) {
++    return attr.equals(ProbeAttributes.PROBEAPPEARANCE)
++        ? ProbeAttributes.getDefaultProbeAppearance()
++        : super.getDefaultAttributeValue(attr, ver);
++  }
++
++  static void paintValue(InstancePainter painter, Value value, boolean colored) {
++    Graphics g = painter.getGraphics();
++    Graphics2D g2 = (Graphics2D) g;
++    Bounds bds = painter.getBounds(); // intentionally with no graphics
++    // object - we don't want label
++    // included
++    g.setFont(Pin.DEFAULT_FONT);
++    boolean IsOutput =
++        (painter.getAttributeSet().containsAttribute(Pin.ATTR_TYPE))
++            ? painter.getAttributeValue(Pin.ATTR_TYPE) == Pin.OUTPUT
++            : false;
++    if (painter.getAttributeValue(ProbeAttributes.PROBEAPPEARANCE)
++        != ProbeAttributes.APPEAR_EVOLUTION_NEW) {
++      if (colored) {
++        int x = bds.getX();
++        int y = bds.getY();
 +        if (modernPinValues && value.getWidth() == 1) {
 +          Graphics2D digit = (Graphics2D) g.create();
 +          digit.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
@@ -200,6 +1068,204 @@ index 1770c9455..7f476198f 100644
 +          digit.dispose();
 +          return;
 +        }
-         if (!IsOutput) {
-           g.setColor(value.get(0).getColor());
-           g.fillOval(x + 5, y + 4, 11, 13);
++        if (!IsOutput) {
++          g.setColor(value.get(0).getColor());
++          g.fillOval(x + 5, y + 4, 11, 13);
++        }
++        if (!IsOutput) g.setColor(Color.WHITE);
++        GraphicsUtil.drawCenteredText(g, value.get(0).toDisplayString(), x + 10, y + 9);
++      } else paintOldStyleValue(painter, value);
++      return;
++    }
++    RadixOption radix = painter.getAttributeValue(RadixOption.ATTRIBUTE);
++    int LabelValueXOffset = 15;
++    if (radix != null && radix != RadixOption.RADIX_2) LabelValueXOffset += 3;
++    g.setColor(Color.BLUE);
++    g2.scale(0.7, 0.7);
++    g2.drawString(
++        radix.getIndexChar(),
++        (int) ((bds.getX() + bds.getWidth() - LabelValueXOffset) / 0.7),
++        (int) ((bds.getY() + bds.getHeight() - 2) / 0.7));
++    g2.scale(1.0 / 0.7, 1.0 / 0.7);
++    g.setColor(Color.BLACK);
++    if (radix == null || radix == RadixOption.RADIX_2) {
++      int x = bds.getX();
++      int y = bds.getY();
++      int wid = value.getWidth();
++      if (wid == 0) {
++        x += bds.getWidth() / 2;
++        y += bds.getHeight() / 2;
++        GraphicsUtil.switchToWidth(g, 2);
++        g.drawLine(x - 4, y, x + 4, y);
++        return;
++      }
++      int yoffset = 12;
++      int x0 = bds.getX() + bds.getWidth() - 20;
++      int cx = x0;
++      int cy = bds.getY() + bds.getHeight() - yoffset;
++      int cur = 0;
++      for (int k = 0; k < wid; k++) {
++        GraphicsUtil.drawCenteredText(g, value.get(k).toDisplayString(), cx, cy);
++        ++cur;
++        if (cur == 8) {
++          cur = 0;
++          cx = x0;
++          cy -= 20;
++        } else {
++          cx -= 10;
++        }
++      }
++    } else {
++      String text = radix.toString(value);
++      int cx = bds.getX() + bds.getWidth() - LabelValueXOffset - 2;
++      for (int k = text.length() - 1; k >= 0; k--) {
++        GraphicsUtil.drawText(
++            g,
++            text.substring(k, k + 1),
++            cx,
++            bds.getY() + bds.getHeight() / 2 - 1,
++            GraphicsUtil.H_RIGHT,
++            GraphicsUtil.H_CENTER);
++        cx -= Pin.DIGIT_WIDTH;
++      }
++    }
++  }
++
++  public static final Probe FACTORY = new Probe();
++
++  public Probe() {
++    super(_ID, S.getter("probeComponent"));
++    setIconName("probe.gif");
++    setKeyConfigurator(new DirectionConfigurator(StdAttr.LABEL_LOC, KeyEvent.ALT_DOWN_MASK));
++    setFacingAttribute(StdAttr.FACING);
++    setInstanceLogger(ProbeLogger.class);
++  }
++
++  //
++  // methods for instances
++  //
++  @Override
++  protected void configureNewInstance(Instance instance) {
++    instance.setPorts(new Port[] {new Port(0, 0, Port.INPUT, BitWidth.UNKNOWN)});
++    instance.addAttributeListener();
++    ((PrefMonitorBooleanConvert) AppPreferences.NEW_INPUT_OUTPUT_SHAPES)
++        .addConvertListener((ProbeAttributes) instance.getAttributeSet());
++    instance.computeLabelTextField(Instance.AVOID_LEFT);
++  }
++
++  @Override
++  public AttributeSet createAttributeSet() {
++    AttributeSet attrs = new ProbeAttributes();
++    attrs.setValue(ProbeAttributes.PROBEAPPEARANCE, ProbeAttributes.getDefaultProbeAppearance());
++    return attrs;
++  }
++
++  @Override
++  public Bounds getOffsetBounds(AttributeSet attrsBase) {
++    ProbeAttributes attrs = (ProbeAttributes) attrsBase;
++    return getOffsetBounds(
++        attrs.facing,
++        attrs.width,
++        attrs.radix,
++        attrs.appearance == ProbeAttributes.APPEAR_EVOLUTION_NEW,
++        false);
++  }
++
++  @Override
++  public boolean isHDLSupportedComponent(AttributeSet attrs) {
++    return true;
++  }
++
++  @Override
++  protected void instanceAttributeChanged(Instance instance, Attribute<?> attr) {
++    if (attr == StdAttr.LABEL_LOC) {
++      instance.computeLabelTextField(Instance.AVOID_LEFT);
++    } else if (attr == StdAttr.FACING
++        || attr == RadixOption.ATTRIBUTE
++        || attr == ProbeAttributes.PROBEAPPEARANCE) {
++      instance.recomputeBounds();
++      instance.computeLabelTextField(Instance.AVOID_LEFT);
++    }
++  }
++
++  //
++  // graphics methods
++  //
++  @Override
++  public void paintGhost(InstancePainter painter) {
++    Graphics g = painter.getGraphics();
++    Bounds bds = painter.getOffsetBounds();
++    g.drawOval(bds.getX() + 1, bds.getY() + 1, bds.getWidth() - 1, bds.getHeight() - 1);
++  }
++
++  @Override
++  public void paintInstance(InstancePainter painter) {
++    Value value = getValue(painter);
++
++    Graphics g = painter.getGraphics();
++    Bounds bds = painter.getBounds(); // intentionally with no graphics
++    // object - we don't want label
++    // included
++    int x = bds.getX();
++    int y = bds.getY();
++    Color back = new Color(0xff, 0xf0, 0x99);
++    if (value.getWidth() <= 1) {
++      g.setColor(back);
++      g.fillOval(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2);
++      g.setColor(Color.lightGray);
++      g.drawOval(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2);
++    } else {
++      g.setColor(back);
++      g.fillRoundRect(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2, 20, 20);
++      g.setColor(Color.lightGray);
++      g.drawRoundRect(x + 1, y + 1, bds.getWidth() - 2, bds.getHeight() - 2, 20, 20);
++    }
++
++    g.setColor(Color.GRAY);
++    painter.drawLabel();
++    g.setColor(Color.DARK_GRAY);
++
++    if (!painter.getShowState()) {
++      if (value.getWidth() > 0) {
++        GraphicsUtil.drawCenteredText(
++            g,
++            "x" + value.getWidth(),
++            bds.getX() + bds.getWidth() / 2,
++            bds.getY() + bds.getHeight() / 2);
++      }
++    } else {
++      paintValue(painter, value);
++    }
++
++    painter.drawPorts();
++  }
++
++  @Override
++  public void propagate(InstanceState state) {
++    StateData oldData = (StateData) state.getData();
++    Value oldValue = oldData == null ? Value.NIL : oldData.curValue;
++    Value newValue = state.getPortValue(0);
++    boolean same = Objects.equals(oldValue, newValue);
++    if (!same) {
++      if (oldData == null) {
++        oldData = new StateData();
++        oldData.curValue = newValue;
++        state.setData(oldData);
++      } else {
++        oldData.curValue = newValue;
++      }
++      int oldWidth = oldValue == null ? 1 : oldValue.getBitWidth().getWidth();
++      int newWidth = newValue.getBitWidth().getWidth();
++      if (oldWidth != newWidth) {
++        ProbeAttributes attrs = (ProbeAttributes) state.getAttributeSet();
++        attrs.width = newValue.getBitWidth();
++        state.getInstance().recomputeBounds();
++        state.getInstance().computeLabelTextField(Instance.AVOID_LEFT);
++      }
++    }
++  }
++
++  public DynamicElement createDynamicElement(int x, int y, DynamicElement.Path path) {
++    return new ProbeShape(x, y, path);
++  }
++}

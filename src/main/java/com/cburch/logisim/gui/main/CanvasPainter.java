@@ -194,6 +194,8 @@ class CanvasPainter implements PropertyChangeListener {
     if (zoomFactor != 1.0 && gfxScaled instanceof Graphics2D g2d) {
       g2d.scale(zoomFactor, zoomFactor);
     }
+    final var origin = canvas.getDrawingOrigin();
+    if (origin != null) gfxScaled.translate(-origin.x,-origin.y);
     final var circ = proj.getCurrentCircuit();
     if (circ == null) {
       gfxScaled.dispose();

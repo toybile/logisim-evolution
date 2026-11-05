@@ -36,7 +36,7 @@ public final class Launcher {
           try {
             LocaleManager.setLocale(I18n.locale());
             ModernWorkspace workspace=ModernWorkspace.install(frame, home().resolve("disposicao.properties"));
-            javax.swing.Timer center=new javax.swing.Timer(300,ignored -> workspace.fitCircuit());
+            javax.swing.Timer center=new javax.swing.Timer(300,ignored -> workspace.centerCircuit());
             center.setRepeats(false);center.start();
           } catch (Throwable failure) {
             failure.printStackTrace();

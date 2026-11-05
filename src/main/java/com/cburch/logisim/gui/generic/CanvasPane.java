@@ -41,6 +41,8 @@ public class CanvasPane extends JScrollPane {
     contents.setCanvasPane(this);
   }
 
+  public java.awt.Point getDrawingOrigin() { return contents.getDrawingOrigin(); }
+
   public Dimension getViewportSize() {
     final var size = new Dimension();
     getViewport().getSize(size);
@@ -115,16 +117,19 @@ public class CanvasPane extends JScrollPane {
       if (prop.equals(ZoomModel.ZOOM)) {
         final var oldZoom = (Double) e.getOldValue();
         var r = getViewport().getViewRect();
-        final var cx = (r.x + r.width / 2) / oldZoom;
-        final var cy = (r.y + r.height / 2) / oldZoom;
+        final var origin = contents.getDrawingOrigin();
+        final var cx = (r.x + r.width / 2.0) / oldZoom + origin.x;
+        final var cy = (r.y + r.height / 2.0) / oldZoom + origin.y;
 
         final var newZoom = (Double) e.getNewValue();
+        contents.recomputeSize();
+        getViewport().doLayout();
+        final var nextOrigin = contents.getDrawingOrigin();
         r = getViewport().getViewRect();
-        final var hv = (int) (cx * newZoom) - r.width / 2;
-        final var vv = (int) (cy * newZoom) - r.height / 2;
+        final var hv = (int) Math.round((cx - nextOrigin.x) * newZoom - r.width / 2.0);
+        final var vv = (int) Math.round((cy - nextOrigin.y) * newZoom - r.height / 2.0);
         getHorizontalScrollBar().setValue(hv);
         getVerticalScrollBar().setValue(vv);
-        contents.recomputeSize();
       } else if (prop.equals(ZoomModel.CENTER)) {
         contents.center();
       }

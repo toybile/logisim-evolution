@@ -122,6 +122,34 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
   private Tool tempTool;
   private MouseMappings mappings;
   private CanvasPane canvasPane;
+  private Rectangle workspaceArea;
+
+  /** Presentation coordinates only; circuit serialization retains its native coordinates. */
+  public void setWorkspaceArea(Rectangle area) {
+    final var previous = getDrawingOrigin();
+    final var position = canvasPane == null ? new Point() : canvasPane.getViewport().getViewPosition();
+    workspaceArea = area == null ? null : new Rectangle(area);
+    computeSize(true);
+    if (canvasPane != null) {
+      canvasPane.getViewport().doLayout();
+      final var next = getDrawingOrigin();
+      setScrollBar(position.x + (int) Math.round((previous.x-next.x)*getZoomFactor()),
+          position.y + (int) Math.round((previous.y-next.y)*getZoomFactor()));
+    }
+    repaint();
+  }
+
+  @Override
+  public Point getDrawingOrigin() {
+    return workspaceArea == null ? new Point() : new Point(workspaceArea.x,workspaceArea.y);
+  }
+
+  public Point circuitToCanvas(double x, double y) {
+    final var origin=getDrawingOrigin();
+    return new Point((int)Math.round((x-origin.x)*getZoomFactor()),
+        (int)Math.round((y-origin.y)*getZoomFactor()));
+  }
+
   private Bounds oldPreferredSize;
   private volatile boolean inPaint = false; // only for within paintComponent
 
@@ -260,14 +288,14 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
     final var xpos =
         (int)
             (Math.round(
-                bounds.getX() * getZoomFactor()
+                (bounds.getX() - getDrawingOrigin().x) * getZoomFactor()
                     - (canvasPane.getViewport().getSize().getWidth()
                             - bounds.getWidth() * getZoomFactor())
                         / 2));
     final var ypos =
         (int)
             (Math.round(
-                bounds.getY() * getZoomFactor()
+                (bounds.getY() - getDrawingOrigin().y) * getZoomFactor()
                     - (canvasPane.getViewport().getSize().getHeight()
                             - bounds.getHeight() * getZoomFactor())
                         / 2));
@@ -301,6 +329,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
       width = bounds.getX() + bounds.getWidth() + viewport.getWidth();
       height = bounds.getY() + bounds.getHeight() + viewport.getHeight();
     }
+    if (workspaceArea != null) { width = workspaceArea.width; height = workspaceArea.height; }
     final var dim = (canvasPane == null)
             ? new Dimension(width, height)
             : canvasPane.supportPreferredSize(width, height);
@@ -342,6 +371,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
               (int) (viewableBase.width / zoom),
               (int) (viewableBase.height / zoom));
     }
+    final var origin=getDrawingOrigin();
+    viewable.translate(origin.x,origin.y);
     return viewable;
   }
 
@@ -389,8 +420,9 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
 
     final var zoom = getZoomFactor();
     final var view = canvasPane.getViewport().getViewRect();
-    final var deltaX = autoPanDelta((int) Math.round(x * zoom), view.x, view.width);
-    final var deltaY = autoPanDelta((int) Math.round(y * zoom), view.y, view.height);
+    final var point = circuitToCanvas(x,y);
+    final var deltaX = autoPanDelta(point.x, view.x, view.width);
+    final var deltaY = autoPanDelta(point.y, view.y, view.height);
     autoPanDeltaX = deltaX;
     autoPanDeltaY = deltaY;
 
@@ -624,6 +656,11 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
   @Override
   public void repaint(int x, int y, int width, int height) {
     final var zoom = getZoomFactor();
+    if (workspaceArea != null) {
+      final var point=circuitToCanvas(x,y);
+      super.repaint(point.x-2,point.y-2,(int)Math.ceil(width*zoom)+4,(int)Math.ceil(height*zoom)+4);
+      return;
+    }
     if (zoom < 1.0) {
       final var newX = (int) Math.floor(x * zoom);
       final var newY = (int) Math.floor(y * zoom);
@@ -643,7 +680,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
   @Override
   public void repaint(Rectangle r) {
     final var zoom = getZoomFactor();
-    if (zoom == 1.0) {
+    if (zoom == 1.0 && workspaceArea == null) {
       super.repaint(r);
     } else {
       this.repaint(r.x, r.y, r.width, r.height);
@@ -655,6 +692,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
     if (zoom != 1.0) {
       zoomEvent(e, zoom);
     }
+    final var origin=getDrawingOrigin();
+    e.translatePoint(origin.x,origin.y);
   }
 
   public void updateArrows() {
@@ -707,6 +746,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
               (int) (viewableBase.width / zoom),
               (int) (viewableBase.height / zoom));
     }
+    final var origin=getDrawingOrigin();
+    viewable.translate(origin.x,origin.y);
     final var isWest = x0 < viewable.x;
     final var isEast = x1 >= viewable.x + viewable.width;
     final var isNorth = y0 < viewable.y;
@@ -745,6 +786,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
   }
 
   public void showPopupMenu(JPopupMenu menu, int x, int y) {
+    final var origin=getDrawingOrigin();
+    x-=origin.x; y-=origin.y;
     final var zoom = getZoomFactor();
     if (zoom != 1.0) {
       x = (int) Math.round(x * zoom);
@@ -756,6 +799,8 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
   }
 
   private void unrepairMouseEvent(MouseEvent e) {
+    final var origin=getDrawingOrigin();
+    e.translatePoint(-origin.x,-origin.y);
     final var zoom = getZoomFactor();
     if (zoom != 1.0) {
       zoomEvent(e, 1.0 / zoom);
@@ -790,6 +835,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
     var zoomControl = proj.getFrame().getZoomControl();
     final var oldView = getViewableBaseRect();
     final var oldZoom = getZoomFactor();
+    final var oldOrigin = getDrawingOrigin();
     if (zoomIn) {
       zoomControl.zoomIn();
     } else {
@@ -798,12 +844,12 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
     if (mouseLocation != null) {
       final var newZoom = getZoomFactor();
 
-      final var mouseInViewX = ((mouseLocation.x * oldZoom) - oldView.x) / oldView.width;
-      final var mouseInViewY = ((mouseLocation.y * oldZoom) - oldView.y) / oldView.height;
+      final var mouseInViewX = (((mouseLocation.x-oldOrigin.x) * oldZoom) - oldView.x) / oldView.width;
+      final var mouseInViewY = (((mouseLocation.y-oldOrigin.y) * oldZoom) - oldView.y) / oldView.height;
 
       final var newView = getViewableBaseRect();
-      final var newViewOffsetX = (mouseLocation.x * newZoom) - (newView.width * mouseInViewX);
-      final var newViewOffsetY = (mouseLocation.y * newZoom) - (newView.height * mouseInViewY);
+      final var newViewOffsetX = ((mouseLocation.x-getDrawingOrigin().x) * newZoom) - (newView.width * mouseInViewX);
+      final var newViewOffsetY = ((mouseLocation.y-getDrawingOrigin().y) * newZoom) - (newView.height * mouseInViewY);
 
       viewport.doLayout();
       setHorizontalScrollBar((int) Math.round(newViewOffsetX));
@@ -896,7 +942,7 @@ public class Canvas extends JPanel implements LocaleListener, CanvasPaneContents
         final var zoomModel = proj.getFrame().getZoomModel();
         double zoomFactor = zoomModel.getZoomFactor();
         scrollRectToVisible(
-            new Rectangle((int) (e.getX() * zoomFactor), (int) (e.getY() * zoomFactor), 1, 1));
+            new Rectangle(circuitToCanvas(e.getX(),e.getY()).x, circuitToCanvas(e.getX(),e.getY()).y, 1, 1));
       }
     }
 
